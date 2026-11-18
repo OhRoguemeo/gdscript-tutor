@@ -62,6 +62,8 @@
       "summary": "A type is the kind of value a variable holds: a number, a yes/no flag, a list, and so on. Picking the right type keeps the game predictable.",
       "horrorHook": "Fear, distance, and battery use floats. Inventory and heard sounds use arrays. Flags such as is_flashlight_on and is_hiding use booleans.",
       "delivery": "in-app",
+      "quiz": "quizzes/lesson-02-data-types.json",
+      "content": "lessons/02-data-types.md",
       "subtopics": [
         {
           "id": 1,
@@ -107,6 +109,8 @@
       "summary": "Conditionals let the game choose a path: if this is true, do that. This is how a monster decides whether it heard you.",
       "horrorHook": "The monster hears you if your volume is high and you are close. Looking at the monster, hiding, and a rising fear meter are all conditional checks.",
       "delivery": "in-app",
+      "quiz": "quizzes/lesson-03-conditionals.json",
+      "content": "lessons/03-conditionals.md",
       "subtopics": [
         {
           "id": 1,
@@ -152,6 +156,8 @@
       "summary": "A loop repeats work: once for each item in a list, or until a condition is no longer true.",
       "horrorHook": "Loops are how a creature checks several rooms, several sound sources, or several lights without you copying the same code over and over.",
       "delivery": "in-app",
+      "quiz": "quizzes/lesson-04-loops.json",
+      "content": "lessons/04-loops.md",
       "subtopics": [
         {
           "id": 1,
@@ -190,6 +196,8 @@
       "summary": "A function is a named recipe: a pack of steps you can run whenever you need them. Functions keep the game code tidy and reusable.",
       "horrorHook": "raise_fear() and toggle_flashlight() are the two actions a simple horror vignette needs most, and the rest of the game can call them from input, a monster, or a scripted scare.",
       "delivery": "in-app",
+      "quiz": "quizzes/lesson-05-functions.json",
+      "content": "lessons/05-functions.md",
       "subtopics": [
         {
           "id": 1,

@@ -1,0 +1,55 @@
+{
+  "lessonId": 2,
+  "title": "Data Types — practice quiz",
+  "description": "A short check on basic types, arrays, dictionaries, and null checks. This quiz does not run GDScript; it only checks that the ideas landed.",
+  "questions": [
+    {
+      "id": 1,
+      "prompt": "What happens when you add an `int` and a `float` in GDScript?",
+      "choices": [
+        "The game crashes",
+        "You get an `int` (the decimal is thrown away)",
+        "You get a `float`",
+        "You get a `String`"
+      ],
+      "answer": 2,
+      "explain": "When you mix an `int` and a `float`, Godot gives you a `float`. The decimal is kept, which is what you want for leftover battery power or a half charge."
+    },
+    {
+      "id": 2,
+      "prompt": "In the array `var inventory: Array[String] = [\"flashlight\", \"key\"]`, what is `inventory[0]`?",
+      "choices": [
+        "`\"key\"`",
+        "`\"flashlight\"`",
+        "`2`",
+        "`null`"
+      ],
+      "answer": 1,
+      "explain": "Array indexes start at `0`, not `1`. So `inventory[0]` is the first item, `\"flashlight\"`. `inventory[1]` would be `\"key\"`."
+    },
+    {
+      "id": 3,
+      "prompt": "What is a dictionary best used for?",
+      "choices": [
+        "A single true or false value",
+        "A list of items in order",
+        "A collection of labeled values",
+        "Playing a sound"
+      ],
+      "answer": 2,
+      "explain": "A dictionary is like a tiny filing cabinet of labeled values, such as a bundle of player stats. A list in order is an array, and a yes-or-no flag is a `bool`."
+    },
+    {
+      "id": 4,
+      "prompt": "What should you do before using a variable that might be `null`?",
+      "choices": [
+        "Delete the variable",
+        "Check it first, for example with `if monster != null:`",
+        "Convert it to an `int`",
+        "Print it twice"
+      ],
+      "answer": 1,
+      "explain": "`null` means nothing is here yet. Checking first, like `if monster != null:`, stops the game from crashing when a creature has not been spawned."
+    }
+  ]
+}

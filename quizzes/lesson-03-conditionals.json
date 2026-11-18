@@ -1,0 +1,55 @@
+{
+  "lessonId": 3,
+  "title": "Conditionals — practice quiz",
+  "description": "A short check on `if` branches, comparisons, `and` / `or` / `not`, and `match`. This quiz does not run GDScript; it only checks that the ideas landed.",
+  "questions": [
+    {
+      "id": 1,
+      "prompt": "In an `if` / `elif` / `else` chain, when does `else` run?",
+      "choices": [
+        "Every time, after the other branches",
+        "Only when every `if` and `elif` above it was false",
+        "Only when the flashlight is on",
+        "Before the `if` runs"
+      ],
+      "answer": 1,
+      "explain": "`else` is the fallback. It runs only when none of the `if` or `elif` conditions above it were true."
+    },
+    {
+      "id": 2,
+      "prompt": "What does `and` mean in `mic_volume > threshold and distance_to_player <= hear_distance`?",
+      "choices": [
+        "The check passes if either side is true",
+        "The check passes only if both sides are true",
+        "The check flips true to false",
+        "The check always fails"
+      ],
+      "answer": 1,
+      "explain": "`and` means both sides must be true. The monster hears you only if you are loud enough and close enough. `or` is the one that passes when either side is true."
+    },
+    {
+      "id": 3,
+      "prompt": "What does `not is_flashlight_on` mean when the flashlight is on?",
+      "choices": [
+        "`true`",
+        "`false`",
+        "`\"on\"`",
+        "`0.0`"
+      ],
+      "answer": 1,
+      "explain": "`not` flips a `bool`. If the flashlight is on, `is_flashlight_on` is `true`, so `not is_flashlight_on` is `false`."
+    },
+    {
+      "id": 4,
+      "prompt": "In a `match`, what is the `_` branch?",
+      "choices": [
+        "The first branch that always runs",
+        "A comment Godot ignores",
+        "The fallback, for any value that did not match an earlier branch",
+        "A loop"
+      ],
+      "answer": 2,
+      "explain": "The `_` branch is the safety net, like `else`. It runs when the value did not match any named branch above it."
+    }
+  ]
+}

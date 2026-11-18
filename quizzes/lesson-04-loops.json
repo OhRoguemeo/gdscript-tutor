@@ -1,0 +1,55 @@
+{
+  "lessonId": 4,
+  "title": "Loops — practice quiz",
+  "description": "A short check on `for` loops, `while` loops, and `break` / `continue`. This quiz does not run GDScript; it only checks that the ideas landed.",
+  "questions": [
+    {
+      "id": 1,
+      "prompt": "What numbers does `range(3)` give you?",
+      "choices": [
+        "`1`, `2`, `3`",
+        "`0`, `1`, `2`",
+        "`0`, `1`, `2`, `3`",
+        "`3`, `2`, `1`"
+      ],
+      "answer": 1,
+      "explain": "`range(3)` starts at `0` and stops before `3`, so you get `0`, `1`, and `2`. It does not include `3`."
+    },
+    {
+      "id": 2,
+      "prompt": "What does `break` do in a loop?",
+      "choices": [
+        "Skips one item and keeps looping",
+        "Restarts the loop from the beginning",
+        "Stops the loop right away",
+        "Pauses the whole game"
+      ],
+      "answer": 2,
+      "explain": "`break` leaves the loop early. Once the monster finds a target, there is no need to keep scanning."
+    },
+    {
+      "id": 3,
+      "prompt": "What does `continue` do in a loop?",
+      "choices": [
+        "Stops the loop right away",
+        "Skips the rest of this pass and goes to the next item",
+        "Repeats the current item forever",
+        "Deletes the current item"
+      ],
+      "answer": 1,
+      "explain": "`continue` skips the rest of the current pass only. The loop keeps going with the next item, unlike `break`, which stops the loop entirely."
+    },
+    {
+      "id": 4,
+      "prompt": "When does a `while` loop stop?",
+      "choices": [
+        "After exactly 10 passes",
+        "When you press a key",
+        "As soon as its condition is no longer true",
+        "Only if you use `match`"
+      ],
+      "answer": 2,
+      "explain": "A `while` loop keeps going as long as its condition is true, and it stops as soon as that condition becomes false. If the condition never becomes false, the loop can run forever."
+    }
+  ]
+}

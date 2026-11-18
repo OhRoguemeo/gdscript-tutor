@@ -1,0 +1,55 @@
+{
+  "lessonId": 5,
+  "title": "Functions — practice quiz",
+  "description": "A short check on writing functions, return types, `clampf`, and `await`. This quiz does not run GDScript; it only checks that the ideas landed.",
+  "questions": [
+    {
+      "id": 1,
+      "prompt": "What is a function?",
+      "choices": [
+        "A labeled box that holds one value",
+        "A named recipe: a pack of steps you can run whenever you need them",
+        "A list of items in order",
+        "A yes-or-no flag"
+      ],
+      "answer": 1,
+      "explain": "A function is a named pack of steps you can call whenever you need them, like `raise_fear()` or `toggle_flashlight()`. A labeled box that holds one value is a variable."
+    },
+    {
+      "id": 2,
+      "prompt": "In `func raise_fear(amount: float) -> void:`, what does `-> void` mean?",
+      "choices": [
+        "The function returns a decimal number",
+        "The function must not be called",
+        "The function does not return a value",
+        "The function waits for a timer"
+      ],
+      "answer": 2,
+      "explain": "`-> void` means the function does not give a value back. It just does work, like changing `fear`. A function that gives a decimal back would be written `-> float`."
+    },
+    {
+      "id": 3,
+      "prompt": "What does `clampf(fear + amount, 0.0, max_fear)` do?",
+      "choices": [
+        "Turns fear into text",
+        "Keeps the new fear value between `0.0` and `max_fear`",
+        "Always sets fear to `0.0`",
+        "Deletes the fear variable"
+      ],
+      "answer": 1,
+      "explain": "`clampf` clamps a decimal number into a range. Here it stops fear from going below `0.0` or above `max_fear`."
+    },
+    {
+      "id": 4,
+      "prompt": "What does `await get_tree().create_timer(0.5).timeout` do?",
+      "choices": [
+        "Closes the game after half a second",
+        "Pauses this function for half a second without freezing the whole game",
+        "Speeds the game up",
+        "Restarts the scene"
+      ],
+      "answer": 1,
+      "explain": "`await` pauses only the function that uses it. The timer lasts half a second, then the function continues, while the rest of the game keeps running."
+    }
+  ]
+}
