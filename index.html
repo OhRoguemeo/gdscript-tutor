@@ -7,8 +7,9 @@
   <meta name="description" content="Learn GDScript for Godot 4 before you build a first-person horror game. A free, offline-friendly tutor for PC, laptop, and phone.">
   <title>GDScript Tutor</title>
   <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/icon-192.png" type="image/png" sizes="192x192">
   <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="assets/icons/icon.svg">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -26,15 +27,29 @@
       <span class="nav-toggle-bars" aria-hidden="true"></span>
     </button>
     <a class="brand" href="#/">
-      <img class="brand-icon" src="assets/icons/icon.svg" alt="" width="32" height="32">
-      <span class="brand-title">GDScript Tutor</span>
+      <img class="brand-icon" src="assets/icons/icon-192.png" alt="" width="32" height="32">
+      <span class="brand-title"><span class="brand-short">GDScript</span><span class="brand-full">GDScript Tutor</span></span>
     </a>
-    <a class="rank-chip" id="rank-chip" href="#/" hidden></a>
+    <div class="header-status">
+      <a class="streak-chip" id="streak-chip" href="#/review" hidden></a>
+      <a class="rank-chip" id="rank-chip" href="#/" hidden></a>
+    </div>
   </header>
 
   <div class="layout">
     <div class="nav-backdrop" id="nav-backdrop" hidden></div>
     <nav id="site-nav" class="site-nav" aria-label="Lessons">
+      <p class="nav-heading">Study</p>
+      <ul class="utility-list" id="utility-list">
+        <li><a href="#/" id="nav-home">Dashboard</a></li>
+        <li>
+          <a href="#/review" id="nav-review">
+            Daily Review
+            <span class="nav-review-count" id="nav-review-count" hidden></span>
+          </a>
+        </li>
+        <li><a href="#/cheatsheet" id="nav-cheatsheet">Cheat sheet</a></li>
+      </ul>
       <p class="nav-heading">Lessons</p>
       <ul id="lesson-list" class="lesson-list">
         <li class="nav-loading">Loading lessons…</li>
@@ -48,7 +63,7 @@
 
   <footer class="site-footer">
     <p>Built to teach GDScript before the Godot 4 horror game.</p>
-    <p>Version 1.1 — bootcamp progress is saved on this device.</p>
+    <p>Version 1.2 — drills, review, and bootcamp progress are saved on this device.</p>
   </footer>
 
   <div id="toast-region" class="toast-region" aria-live="polite" aria-relevant="additions"></div>
@@ -57,7 +72,7 @@
 
   <dialog id="reset-dialog" class="confirm-dialog" aria-labelledby="reset-dialog-title">
     <h2 id="reset-dialog-title">Reset progress?</h2>
-    <p>This clears your XP, rank, badges, mission completions, and saved quiz scores on this device. This cannot be undone.</p>
+    <p>This clears your XP, rank, badges, typing drills, review queue, streak, mission completions, and saved quiz scores on this device. This cannot be undone.</p>
     <div class="dialog-actions">
       <button type="button" class="btn" id="cancel-reset">Cancel</button>
       <button type="button" class="btn btn-danger" id="confirm-reset">Reset progress</button>

@@ -1,0 +1,66 @@
+{
+  "lessonId": 5,
+  "title": "Functions — typing drills",
+  "description": "Type function headers, a clamp, and an await. Spacing and indentation are flexible, and a trailing semicolon is fine.",
+  "drills": [
+    {
+      "id": 1,
+      "prompt": "Declare a function named toggle_flashlight that returns nothing. Type only the header line.",
+      "accepted": [
+        "func toggle_flashlight() -> void:",
+        "func toggle_flashlight():",
+        "func toggle_flashlight() -> void :",
+        "func toggle_flashlight() :"
+      ],
+      "hint": "Start with func, add empty parentheses, and you can mark the return type as -> void.",
+      "explain": "-> void means the function does not give a value back. It just does work, like flipping the flashlight."
+    },
+    {
+      "id": 2,
+      "prompt": "Declare a function named raise_fear that takes a float parameter named amount and returns nothing. Type only the header line.",
+      "accepted": [
+        "func raise_fear(amount: float) -> void:",
+        "func raise_fear(amount: float):",
+        "func raise_fear(amount: float) -> void :",
+        "func raise_fear(amount:float) -> void:"
+      ],
+      "hint": "Put the parameter in parentheses as amount: float, then optionally -> void and a colon.",
+      "explain": "The name amount is the input. A typed header helps Godot catch a call that passes the wrong kind of value."
+    },
+    {
+      "id": 3,
+      "prompt": "Write a line that sets fear to fear plus amount, clamped between 0.0 and max_fear.",
+      "accepted": [
+        "fear = clampf(fear + amount, 0.0, max_fear)",
+        "fear = clampf(fear + amount, 0, max_fear)",
+        "fear = clamp(fear + amount, 0.0, max_fear)",
+        "fear = clampf(fear+amount, 0.0, max_fear)"
+      ],
+      "hint": "Use clampf, which keeps a decimal number inside a range.",
+      "explain": "clampf stops fear from going below 0.0 or above max_fear. The similar clamp() function is also accepted here."
+    },
+    {
+      "id": 4,
+      "prompt": "Write an await that waits 0.5 seconds using a scene-tree timer.",
+      "accepted": [
+        "await get_tree().create_timer(0.5).timeout",
+        "await get_tree().create_timer(.5).timeout"
+      ],
+      "hint": "await, then get_tree().create_timer(0.5).timeout — that is the usual Godot 4 pattern.",
+      "explain": "await pauses only the function that uses it. The rest of the game keeps running during the half-second wait."
+    },
+    {
+      "id": 5,
+      "prompt": "Write a function named get_fear that returns the fear variable as a float. Include the return line.",
+      "accepted": [
+        "func get_fear() -> float:\n\treturn fear",
+        "func get_fear() -> float:\n    return fear",
+        "func get_fear() -> float:\nreturn fear",
+        "func get_fear():\n\treturn fear",
+        "func get_fear():\n    return fear"
+      ],
+      "hint": "Two lines: a func header with -> float, then return fear. Tab is fine for the indent.",
+      "explain": "-> float tells callers they will get a decimal back. The body is just return fear."
+    }
+  ]
+}

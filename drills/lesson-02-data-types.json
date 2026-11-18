@@ -1,0 +1,79 @@
+{
+  "lessonId": 2,
+  "title": "Data Types — typing drills",
+  "description": "Type short GDScript for strings, bools, arrays, dictionaries, and a null check. Quotes and spacing can vary; a trailing semicolon is fine.",
+  "drills": [
+    {
+      "id": 1,
+      "prompt": "Declare a String variable named current_room set to Basement.",
+      "accepted": [
+        "var current_room: String = \"Basement\"",
+        "var current_room: String := \"Basement\"",
+        "var current_room := \"Basement\"",
+        "var current_room = \"Basement\"",
+        "var current_room: String = 'Basement'",
+        "var current_room: String := 'Basement'",
+        "var current_room := 'Basement'",
+        "var current_room = 'Basement'"
+      ],
+      "hint": "Text values need quotes around them, and the line starts with var.",
+      "explain": "Without quotes, Godot would think Basement is a name, not text. Single or double quotes both work in GDScript."
+    },
+    {
+      "id": 2,
+      "prompt": "Declare a bool named is_flashlight_on set to false.",
+      "accepted": [
+        "var is_flashlight_on: bool = false",
+        "var is_flashlight_on: bool := false",
+        "var is_flashlight_on := false",
+        "var is_flashlight_on = false"
+      ],
+      "hint": "A bool is just true or false, written in lowercase, with no quotes.",
+      "explain": "is_flashlight_on is a yes-or-no flag. false means the beam starts off."
+    },
+    {
+      "id": 3,
+      "prompt": "Declare a typed array of strings named inventory that starts with flashlight and key, in that order.",
+      "accepted": [
+        "var inventory: Array[String] = [\"flashlight\", \"key\"]",
+        "var inventory: Array[String] = ['flashlight', 'key']",
+        "var inventory := [\"flashlight\", \"key\"]",
+        "var inventory = [\"flashlight\", \"key\"]",
+        "var inventory := ['flashlight', 'key']",
+        "var inventory = ['flashlight', 'key']"
+      ],
+      "hint": "Use square brackets. Array[String] is the typed form, and indexes will start at 0.",
+      "explain": "inventory[0] is \"flashlight\" and inventory[1] is \"key\". Typing the array as Array[String] helps Godot catch mistakes early."
+    },
+    {
+      "id": 4,
+      "prompt": "Declare a dictionary named stats with fear set to 0.0 and stamina set to 100.0.",
+      "accepted": [
+        "var stats := {\"fear\": 0.0, \"stamina\": 100.0}",
+        "var stats = {\"fear\": 0.0, \"stamina\": 100.0}",
+        "var stats: Dictionary = {\"fear\": 0.0, \"stamina\": 100.0}",
+        "var stats: Dictionary := {\"fear\": 0.0, \"stamina\": 100.0}",
+        "var stats := {'fear': 0.0, 'stamina': 100.0}",
+        "var stats = {'fear': 0.0, 'stamina': 100.0}",
+        "var stats: Dictionary = {'fear': 0.0, 'stamina': 100.0}",
+        "var stats := {fear = 0.0, stamina = 100.0}",
+        "var stats = {fear = 0.0, stamina = 100.0}",
+        "var stats: Dictionary = {fear = 0.0, stamina = 100.0}",
+        "var stats := {\"fear\": 0, \"stamina\": 100.0}",
+        "var stats := {\"fear\": 0.0, \"stamina\": 100}"
+      ],
+      "hint": "A dictionary uses curly braces and labeled values, like \"fear\": 0.0.",
+      "explain": "A dictionary is a tiny filing cabinet of labeled values. You can also write Godot's identifier form, {fear = 0.0, stamina = 100.0}."
+    },
+    {
+      "id": 5,
+      "prompt": "Write the if line that checks whether monster is not null.",
+      "accepted": [
+        "if monster != null:",
+        "if monster != null :"
+      ],
+      "hint": "Start with if, compare monster to null, and end the line with a colon.",
+      "explain": "null means nothing is here yet. Checking if monster != null: before you use it stops the game from crashing when a creature has not been spawned."
+    }
+  ]
+}

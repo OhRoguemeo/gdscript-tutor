@@ -1,5 +1,5 @@
 /* Cache-first service worker for offline lessons. */
-const CACHE_NAME = "gdscript-tutor-v4";
+const CACHE_NAME = "gdscript-tutor-v5";
 const PRECACHE = [
   "./",
   "./index.html",
@@ -18,7 +18,15 @@ const PRECACHE = [
   "./quizzes/lesson-03-conditionals.json",
   "./quizzes/lesson-04-loops.json",
   "./quizzes/lesson-05-functions.json",
+  "./drills/lesson-01-variables.json",
+  "./drills/lesson-02-data-types.json",
+  "./drills/lesson-03-conditionals.json",
+  "./drills/lesson-04-loops.json",
+  "./drills/lesson-05-functions.json",
   "./assets/icons/icon.svg",
+  "./assets/icons/icon-192.png",
+  "./assets/icons/icon-512.png",
+  "./assets/icons/apple-touch-icon.png",
   "./README.md",
   "./starter-projects/README.md"
 ];

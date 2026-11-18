@@ -1,0 +1,68 @@
+{
+  "lessonId": 1,
+  "title": "Variables — typing drills",
+  "description": "Type short GDScript lines for a fear meter, a flashlight battery, and a few Inspector tweaks. Spacing is flexible, and a trailing semicolon is fine.",
+  "drills": [
+    {
+      "id": 1,
+      "prompt": "Declare a float named fear set to 0.0.",
+      "accepted": [
+        "var fear: float = 0.0",
+        "var fear: float := 0.0",
+        "var fear := 0.0",
+        "var fear = 0.0",
+        "var fear: float = 0"
+      ],
+      "hint": "Start with var, then the name fear. You can write the type as : float or let Godot infer it with :=.",
+      "explain": "All of these are valid: var fear: float = 0.0, var fear := 0.0, and var fear = 0.0. Using := or a typed float keeps fear a decimal, which is what a creeping fear meter needs."
+    },
+    {
+      "id": 2,
+      "prompt": "Declare a variable named flashlight_battery set to 100.0.",
+      "accepted": [
+        "var flashlight_battery: float = 100.0",
+        "var flashlight_battery: float := 100.0",
+        "var flashlight_battery := 100.0",
+        "var flashlight_battery = 100.0",
+        "var flashlight_battery: float = 100"
+      ],
+      "hint": "Use var and the full name flashlight_battery. 100.0 is a float.",
+      "explain": "flashlight_battery holds how much charge is left. A float lets it drain by fractions as the light stays on."
+    },
+    {
+      "id": 3,
+      "prompt": "Write an @export variable named max_fear set to 100.0.",
+      "accepted": [
+        "@export var max_fear := 100.0",
+        "@export var max_fear: float = 100.0",
+        "@export var max_fear: float := 100.0",
+        "@export var max_fear = 100.0",
+        "@export var max_fear: float = 100"
+      ],
+      "hint": "Put @export on the same line, just before var.",
+      "explain": "@export puts max_fear in the Inspector so you can tweak the fear cap while you test, without opening the script."
+    },
+    {
+      "id": 4,
+      "prompt": "Declare a constant named MAX_INVENTORY_SLOTS set to 8.",
+      "accepted": [
+        "const MAX_INVENTORY_SLOTS := 8",
+        "const MAX_INVENTORY_SLOTS: int = 8",
+        "const MAX_INVENTORY_SLOTS: int := 8",
+        "const MAX_INVENTORY_SLOTS = 8"
+      ],
+      "hint": "Use const, not var. Constant names are usually written in ALL_CAPS.",
+      "explain": "const is for values that should not change. Godot reports an error if the code later tries to assign a new value to MAX_INVENTORY_SLOTS."
+    },
+    {
+      "id": 5,
+      "prompt": "Assign 80.0 to an existing variable named flashlight_battery. Do not declare it again.",
+      "accepted": [
+        "flashlight_battery = 80.0",
+        "flashlight_battery = 80"
+      ],
+      "hint": "This is just an assignment. Do not start the line with var.",
+      "explain": "Once a variable exists, you change it with =. Writing var again would try to declare a second box with the same name."
+    }
+  ]
+}

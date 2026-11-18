@@ -9,8 +9,24 @@ const QUIZ_QUESTION_COUNT = 4;
 const XP_PER_CORRECT = 25;
 const XP_PERFECT_BONUS = 50;
 const XP_MISSION = 150;
+const XP_PER_DRILL = 10;
+const DRILLS_PER_LESSON = 5;
 const QUIZ_MODULE_COUNT = 5;
 const TOTAL_MODULE_COUNT = 7;
+const TOTAL_DRILL_COUNT = QUIZ_MODULE_COUNT * DRILLS_PER_LESSON;
+const MAX_XP =
+  QUIZ_MODULE_COUNT * (QUIZ_QUESTION_COUNT * XP_PER_CORRECT + XP_PERFECT_BONUS) +
+  TOTAL_DRILL_COUNT * XP_PER_DRILL +
+  2 * XP_MISSION;
+const REVIEW_DECK_SIZE = 5;
+const REVIEW_MISS_LIMIT = 2;
+const LEITNER_INTERVALS_MS = [
+  1 * 24 * 60 * 60 * 1000,
+  3 * 24 * 60 * 60 * 1000,
+  7 * 24 * 60 * 60 * 1000,
+  14 * 24 * 60 * 60 * 1000,
+];
+const LEITNER_MAX_BOX = 4;
 
 const RANKS = [
   { id: "recruit", name: "Recruit", shortName: "Recruit", xp: 0, icon: "🕯️" },
@@ -20,7 +36,7 @@ const RANKS = [
   { id: "lieutenant", name: "Lieutenant", shortName: "Lieutenant", xp: 600, icon: "📡" },
   { id: "captain", name: "Captain", shortName: "Captain", xp: 750, icon: "🛡️" },
   { id: "operative", name: "Operative", shortName: "Operative", xp: 900, icon: "👁️" },
-  { id: "cable", name: "Cable-Level Operative", shortName: "Cable", xp: 1050, icon: "💀" },
+  { id: "cable", name: "Cable-Level Operative", shortName: "Cable", xp: 1300, icon: "💀" },
 ];
 
 const ACHIEVEMENTS = [
@@ -78,6 +94,24 @@ const ACHIEVEMENTS = [
     icon: "🏆",
     description: "Pass all seven modules.",
   },
+  {
+    id: "keyboard-warrior",
+    name: "Keyboard Warrior",
+    icon: "⌨️",
+    description: "Complete every typing drill in a lesson.",
+  },
+  {
+    id: "on-a-roll",
+    name: "On a Roll",
+    icon: "🔥",
+    description: "Keep a 3-day streak.",
+  },
+  {
+    id: "seven-nights",
+    name: "Seven Nights",
+    icon: "🌙",
+    description: "Keep a 7-day streak.",
+  },
 ];
 
 const navList = document.getElementById("lesson-list");
@@ -86,11 +120,15 @@ const navToggle = document.getElementById("nav-toggle");
 const navBackdrop = document.getElementById("nav-backdrop");
 const main = document.getElementById("main");
 const rankChip = document.getElementById("rank-chip");
+const streakChip = document.getElementById("streak-chip");
 const toastRegion = document.getElementById("toast-region");
 const resetDialog = document.getElementById("reset-dialog");
 
 let outline = null;
 let progressCache = null;
+let reviewSession = null;
+const quizCache = new Map();
+const drillCache = new Map();
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
@@ -103,13 +141,20 @@ function registerServiceWorker() {
   });
 }
 
+function emptyStreak() {
+  return { current: 0, best: 0, lastActiveDate: null };
+}
+
 function emptyProgress() {
   return {
-    version: 1,
+    version: 2,
     bestScores: {},
     missions: {},
     everFailed: {},
     achievements: {},
+    drillsCompleted: {},
+    review: {},
+    streak: emptyStreak(),
   };
 }
 
@@ -123,6 +168,69 @@ function clampScore(value) {
     return null;
   }
   return Math.max(0, Math.min(QUIZ_QUESTION_COUNT, Math.round(number)));
+}
+
+function sanitizeStreak(raw) {
+  const streak = emptyStreak();
+  if (!isPlainObject(raw)) {
+    return streak;
+  }
+  const current = Number(raw.current);
+  const best = Number(raw.best);
+  if (Number.isFinite(current) && current >= 0) {
+    streak.current = Math.round(current);
+  }
+  if (Number.isFinite(best) && best >= 0) {
+    streak.best = Math.round(best);
+  }
+  if (typeof raw.lastActiveDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.lastActiveDate)) {
+    streak.lastActiveDate = raw.lastActiveDate;
+  }
+  if (streak.best < streak.current) {
+    streak.best = streak.current;
+  }
+  return streak;
+}
+
+function sanitizeReview(raw) {
+  const review = {};
+  if (!isPlainObject(raw)) {
+    return review;
+  }
+  for (const [key, value] of Object.entries(raw)) {
+    if (!isPlainObject(value)) {
+      continue;
+    }
+    const type = value.type === "drill" ? "drill" : value.type === "quiz" ? "quiz" : null;
+    const lessonId = Number(value.lessonId);
+    if (!type || !Number.isFinite(lessonId)) {
+      continue;
+    }
+    const box = Math.max(1, Math.min(LEITNER_MAX_BOX, Math.round(Number(value.box) || 1)));
+    const due = Number(value.due);
+    const item = {
+      id: String(value.id || key),
+      type,
+      lessonId,
+      box,
+      due: Number.isFinite(due) ? due : Date.now(),
+    };
+    if (type === "quiz") {
+      const questionId = Number(value.questionId);
+      if (!Number.isFinite(questionId)) {
+        continue;
+      }
+      item.questionId = questionId;
+    } else {
+      const drillId = Number(value.drillId);
+      if (!Number.isFinite(drillId)) {
+        continue;
+      }
+      item.drillId = drillId;
+    }
+    review[item.id] = item;
+  }
+  return review;
 }
 
 function sanitizeProgress(raw) {
@@ -159,6 +267,16 @@ function sanitizeProgress(raw) {
       }
     }
   }
+  if (isPlainObject(raw.drillsCompleted)) {
+    for (const [key, value] of Object.entries(raw.drillsCompleted)) {
+      if (value) {
+        progress.drillsCompleted[String(key)] =
+          typeof value === "string" && value.trim() ? value : new Date().toISOString();
+      }
+    }
+  }
+  progress.review = sanitizeReview(raw.review);
+  progress.streak = sanitizeStreak(raw.streak);
   return progress;
 }
 
@@ -196,6 +314,7 @@ function writeLegacyBestScore(lessonId, score) {
 }
 
 function persistProgress(progress) {
+  progress.version = 2;
   progressCache = progress;
   try {
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
@@ -287,11 +406,16 @@ function passedLessonCount(progress = loadProgress()) {
   return count;
 }
 
+function getDrillXp(progress = loadProgress()) {
+  return Object.keys(progress.drillsCompleted || {}).length * XP_PER_DRILL;
+}
+
 function getTotalXp(progress = loadProgress()) {
   let xp = 0;
   for (let id = 1; id <= QUIZ_MODULE_COUNT; id += 1) {
     xp += xpForScore(getBestScore(id, progress) || 0);
   }
+  xp += getDrillXp(progress);
   if (progress.missions["6"]) {
     xp += XP_MISSION;
   }
@@ -316,6 +440,126 @@ function getRankInfo(xp) {
 function isNightOwlHour(date) {
   const hour = date.getHours();
   return hour >= 0 && hour < 5;
+}
+
+function padDatePart(value) {
+  return String(value).padStart(2, "0");
+}
+
+function localDateString(date = new Date()) {
+  return `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`;
+}
+
+function shiftLocalDateString(date, days) {
+  const copy = new Date(date.getTime());
+  copy.setDate(copy.getDate() + days);
+  return localDateString(copy);
+}
+
+function getDisplayStreak(progress = loadProgress(), now = new Date()) {
+  const last = progress.streak && progress.streak.lastActiveDate;
+  const current = (progress.streak && progress.streak.current) || 0;
+  const today = localDateString(now);
+  const yesterday = shiftLocalDateString(now, -1);
+  if (last === today || last === yesterday) {
+    return current;
+  }
+  return 0;
+}
+
+function recordActivity(progress, now = new Date()) {
+  if (!progress.streak) {
+    progress.streak = emptyStreak();
+  }
+  const today = localDateString(now);
+  const last = progress.streak.lastActiveDate;
+  if (last === today) {
+    return false;
+  }
+  if (last === shiftLocalDateString(now, -1)) {
+    progress.streak.current += 1;
+  } else {
+    progress.streak.current = 1;
+  }
+  progress.streak.lastActiveDate = today;
+  if (progress.streak.current > (progress.streak.best || 0)) {
+    progress.streak.best = progress.streak.current;
+  }
+  return true;
+}
+
+function reviewItemId(type, lessonId, itemId) {
+  return `${type}:${lessonId}:${itemId}`;
+}
+
+function enqueueReviewItem(progress, partial, now = Date.now()) {
+  if (!progress.review) {
+    progress.review = {};
+  }
+  const id = partial.id || reviewItemId(partial.type, partial.lessonId, partial.questionId || partial.drillId);
+  const existing = progress.review[id];
+  if (existing) {
+    existing.box = 1;
+    existing.due = now;
+    return existing;
+  }
+  const item = {
+    id,
+    type: partial.type,
+    lessonId: Number(partial.lessonId),
+    box: 1,
+    due: now,
+  };
+  if (item.type === "quiz") {
+    item.questionId = Number(partial.questionId);
+  } else {
+    item.drillId = Number(partial.drillId);
+  }
+  progress.review[id] = item;
+  return item;
+}
+
+function graduateReviewItem(progress, id) {
+  if (progress.review && progress.review[id]) {
+    delete progress.review[id];
+  }
+}
+
+function applyReviewResult(progress, item, isCorrect, now = Date.now()) {
+  if (!item || !item.id) {
+    return;
+  }
+  if (!isCorrect) {
+    enqueueReviewItem(progress, item, now + LEITNER_INTERVALS_MS[0]);
+    return;
+  }
+  const existing = progress.review && progress.review[item.id];
+  if (!existing) {
+    return;
+  }
+  const nextBox = (existing.box || 1) + 1;
+  if (nextBox > LEITNER_MAX_BOX) {
+    graduateReviewItem(progress, item.id);
+    return;
+  }
+  existing.box = nextBox;
+  existing.due = now + LEITNER_INTERVALS_MS[nextBox - 1];
+}
+
+function getDueReviewItems(progress = loadProgress(), now = Date.now()) {
+  return Object.values(progress.review || {})
+    .filter((item) => Number(item.due) <= now)
+    .sort((a, b) => Number(a.due) - Number(b.due) || String(a.id).localeCompare(String(b.id)));
+}
+
+function lessonDrillsComplete(lessonId, progress = loadProgress()) {
+  const completed = progress.drillsCompleted || {};
+  for (let drillId = 1; drillId <= DRILLS_PER_LESSON; drillId += 1) {
+    if (!completed[`${lessonId}:${drillId}`]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function evaluateAchievements(progress, context = {}) {
@@ -379,6 +623,21 @@ function evaluateAchievements(progress, context = {}) {
     award("night-owl");
   }
 
+  for (let id = 1; id <= QUIZ_MODULE_COUNT; id += 1) {
+    if (lessonDrillsComplete(id, progress)) {
+      award("keyboard-warrior");
+      break;
+    }
+  }
+
+  const bestStreak = (progress.streak && progress.streak.best) || 0;
+  if (bestStreak >= 3) {
+    award("on-a-roll");
+  }
+  if (bestStreak >= 7) {
+    award("seven-nights");
+  }
+
   return unlocked;
 }
 
@@ -386,9 +645,11 @@ function showToast({ title, body, icon, type = "achievement" }) {
   if (!toastRegion) {
     return;
   }
+  toastRegion.querySelectorAll(".toast").forEach((el) => el.remove());
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
   toast.setAttribute("role", "status");
+  toast.dataset.toast = "combined";
   toast.innerHTML = `
     <span class="toast-icon" aria-hidden="true">${icon || "★"}</span>
     <span class="toast-copy">
@@ -400,29 +661,55 @@ function showToast({ title, body, icon, type = "achievement" }) {
   window.setTimeout(() => {
     toast.classList.add("is-leaving");
     window.setTimeout(() => toast.remove(), 280);
-  }, 4800);
+  }, 5200);
 }
 
-function announceUnlocks(unlockedIds, oldRank, newRank) {
-  if (newRank && oldRank && newRank.id !== oldRank.id) {
-    showToast({
-      type: "rank",
-      icon: newRank.icon,
-      title: `Promoted to ${newRank.name}`,
-      body: "New rank unlocked.",
-    });
+function announceUnlocks(unlockedIds, oldRank, newRank, extra = "") {
+  const promoted = Boolean(newRank && oldRank && newRank.id !== oldRank.id);
+  const achievements = (unlockedIds || [])
+    .map((id) => ACHIEVEMENTS.find((item) => item.id === id))
+    .filter(Boolean);
+  if (!promoted && !achievements.length && !extra) {
+    return;
   }
-  unlockedIds.forEach((id) => {
-    const achievement = ACHIEVEMENTS.find((item) => item.id === id);
-    if (!achievement) {
-      return;
-    }
-    showToast({
-      type: "achievement",
-      icon: achievement.icon,
-      title: "Achievement unlocked",
-      body: `${achievement.name} — ${achievement.description}`,
-    });
+
+  const parts = [];
+  if (extra) {
+    parts.push(extra);
+  }
+  if (achievements.length === 1) {
+    parts.push(`${achievements[0].name} unlocked`);
+  } else if (achievements.length > 1) {
+    parts.push(`${achievements.length} badges unlocked`);
+  }
+  if (promoted) {
+    parts.push(`promoted to ${newRank.name}`);
+  }
+
+  let icon = "★";
+  let type = "achievement";
+  if (promoted) {
+    icon = newRank.icon;
+    type = "rank";
+  } else if (achievements[0]) {
+    icon = achievements[0].icon;
+  }
+
+  const bodyParts = [];
+  if (achievements.length > 1) {
+    bodyParts.push(achievements.map((item) => item.name).join(", "));
+  } else if (achievements.length === 1) {
+    bodyParts.push(achievements[0].description);
+  }
+  if (promoted && !achievements.length) {
+    bodyParts.push("New rank unlocked.");
+  }
+
+  showToast({
+    type,
+    icon,
+    title: parts.join(" + "),
+    body: bodyParts.join(" · "),
   });
 }
 
@@ -442,10 +729,65 @@ function updateRankChip(progress = loadProgress()) {
   rankChip.setAttribute("aria-label", `${current.name}, ${xp} XP. Back to dashboard.`);
 }
 
+function updateStreakChip(progress = loadProgress()) {
+  if (!streakChip) {
+    return;
+  }
+  const streak = getDisplayStreak(progress);
+  streakChip.hidden = false;
+  const label = streak === 1 ? "1 day streak" : `${streak} day streak`;
+  streakChip.innerHTML = `
+    <span class="streak-chip-icon" aria-hidden="true">🔥</span>
+    <span class="streak-chip-text">${streak}</span>
+  `;
+  streakChip.setAttribute("aria-label", `${label}. Open Daily Review.`);
+}
+
+function updateUtilityNav(route) {
+  const view = route && route.view;
+  const home = document.getElementById("nav-home");
+  const review = document.getElementById("nav-review");
+  const cheatsheet = document.getElementById("nav-cheatsheet");
+  const dueEl = document.getElementById("nav-review-count");
+  if (home) {
+    if (view === "home") {
+      home.setAttribute("aria-current", "page");
+    } else {
+      home.removeAttribute("aria-current");
+    }
+  }
+  if (review) {
+    if (view === "review") {
+      review.setAttribute("aria-current", "page");
+    } else {
+      review.removeAttribute("aria-current");
+    }
+  }
+  if (cheatsheet) {
+    if (view === "cheatsheet") {
+      cheatsheet.setAttribute("aria-current", "page");
+    } else {
+      cheatsheet.removeAttribute("aria-current");
+    }
+  }
+  if (dueEl) {
+    const due = getDueReviewItems().length;
+    if (due > 0) {
+      dueEl.hidden = false;
+      dueEl.textContent = String(due);
+    } else {
+      dueEl.hidden = true;
+      dueEl.textContent = "";
+    }
+  }
+}
+
 function refreshChrome(route) {
   const current = route || parseHash();
   renderNav(current);
+  updateUtilityNav(current);
   updateRankChip();
+  updateStreakChip();
 }
 
 function getContinueModule(progress = loadProgress()) {
@@ -455,7 +797,7 @@ function getContinueModule(progress = loadProgress()) {
   return outline.modules.find((module) => isLessonUnlocked(module.id, progress) && !isLessonPassed(module.id, progress)) || null;
 }
 
-function recordQuizResult(lessonId, score) {
+function recordQuizResult(lessonId, score, extras = {}) {
   const progress = loadProgress();
   const key = String(lessonId);
   const previousBest = getBestScore(lessonId, progress);
@@ -470,13 +812,19 @@ function recordQuizResult(lessonId, score) {
     progress.bestScores[key] = score;
   }
 
+  (extras.missed || []).forEach((item) => {
+    enqueueReviewItem(progress, item);
+  });
+
+  recordActivity(progress, extras.now || new Date());
+
   const unlocked = evaluateAchievements(progress, {
     quizFinished: true,
     lessonId,
     score,
     previousBest,
     previouslyPassed,
-    now: new Date(),
+    now: extras.now || new Date(),
   });
   persistProgress(progress);
 
@@ -496,6 +844,44 @@ function recordQuizResult(lessonId, score) {
   };
 }
 
+function recordDrillResult(lessonId, drill, isCorrect) {
+  const progress = loadProgress();
+  const oldXp = getTotalXp(progress);
+  const oldRank = getRankInfo(oldXp).current;
+  const key = `${lessonId}:${drill.id}`;
+  const already = Boolean(progress.drillsCompleted[key]);
+  let xpGained = 0;
+
+  if (isCorrect) {
+    if (!already) {
+      progress.drillsCompleted[key] = new Date().toISOString();
+    }
+    recordActivity(progress);
+    const existing = progress.review && progress.review[reviewItemId("drill", lessonId, drill.id)];
+    if (existing) {
+      applyReviewResult(progress, existing, true);
+    }
+  } else {
+    enqueueReviewItem(progress, { type: "drill", lessonId, drillId: drill.id });
+  }
+
+  const unlocked = evaluateAchievements(progress, { now: new Date() });
+  persistProgress(progress);
+  const newXp = getTotalXp(progress);
+  const newRank = getRankInfo(newXp).current;
+  xpGained = newXp - oldXp;
+  announceUnlocks(unlocked, oldRank, newRank, xpGained > 0 ? `+${xpGained} XP` : "");
+  refreshChrome();
+
+  return {
+    already,
+    firstCompletion: isCorrect && !already,
+    xpGained,
+    totalXp: newXp,
+    unlocked,
+  };
+}
+
 function markMissionComplete(lessonId) {
   const progress = loadProgress();
   const key = String(lessonId);
@@ -505,22 +891,18 @@ function markMissionComplete(lessonId) {
   const oldXp = getTotalXp(progress);
   const oldRank = getRankInfo(oldXp).current;
   progress.missions[key] = true;
+  recordActivity(progress);
   const unlocked = evaluateAchievements(progress, { now: new Date() });
   persistProgress(progress);
   const newXp = getTotalXp(progress);
   const newRank = getRankInfo(newXp).current;
-  announceUnlocks(unlocked, oldRank, newRank);
-  showToast({
-    type: "rank",
-    icon: "📻",
-    title: "Mission complete",
-    body: `+${newXp - oldXp} XP`,
-  });
+  announceUnlocks(unlocked, oldRank, newRank, `Mission complete · +${newXp - oldXp} XP`);
   return { xpGained: newXp - oldXp, totalXp: newXp };
 }
 
 function clearAllProgress() {
   progressCache = emptyProgress();
+  reviewSession = null;
   try {
     localStorage.removeItem(PROGRESS_KEY);
     for (let id = 1; id <= QUIZ_MODULE_COUNT; id += 1) {
@@ -534,7 +916,7 @@ function clearAllProgress() {
 function exportProgress() {
   const payload = {
     app: "gdscript-tutor",
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     progress: loadProgress(),
   };
@@ -556,6 +938,7 @@ function importProgressFile(file) {
     const progress = sanitizeProgress(raw);
     evaluateAchievements(progress, { silent: true });
     persistProgress(progress);
+    reviewSession = null;
     return progress;
   });
 }
@@ -588,6 +971,12 @@ function parseHash() {
     const moduleId = Number(parts[1]);
     const subtopicId = parts[2] ? Number(parts[2]) : null;
     return { view: "lesson", moduleId, subtopicId };
+  }
+  if (parts[0] === "review") {
+    return { view: "review" };
+  }
+  if (parts[0] === "cheatsheet" || parts[0] === "cheat-sheet") {
+    return { view: "cheatsheet" };
   }
   return { view: "home" };
 }
@@ -698,6 +1087,32 @@ function renderList(lines) {
   return `<${tag}>${items}</${tag}>`;
 }
 
+function renderCodeLines(code) {
+  const normalized = String(code).replace(/\t/g, "    ").replace(/\n$/, "");
+  return normalized
+    .split("\n")
+    .map((line) => `<span class="code-line">${line === "" ? "&nbsp;" : escapeHtml(line)}</span>`)
+    .join("");
+}
+
+function renderCodeBlock(code, language = "gdscript") {
+  if (!code && code !== "") {
+    return "";
+  }
+  const raw = String(code).replace(/\t/g, "    ").replace(/\n$/, "");
+  const label = language
+    ? `<figcaption class="code-label">${escapeHtml(language)}</figcaption>`
+    : `<span class="code-label-spacer"></span>`;
+  const classAttr = language ? ` class="language-${escapeHtml(language)}"` : "";
+  return `<figure class="code-block">
+    <div class="code-toolbar">
+      ${label}
+      <button type="button" class="copy-btn" data-code="${escapeHtml(raw)}">Copy</button>
+    </div>
+    <pre><code${classAttr}>${renderCodeLines(raw)}</code></pre>
+  </figure>`;
+}
+
 function renderMarkdown(markdown) {
   let source = markdown.replace(/\r\n/g, "\n");
   source = stripFrontMatter(source);
@@ -708,12 +1123,7 @@ function renderMarkdown(markdown) {
   const codeBlocks = [];
   source = source.replace(/```([^\n]*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const language = lang.trim();
-    const normalized = code.replace(/\t/g, "    ").replace(/\n$/, "");
-    const label = language
-      ? `<figcaption class="code-label">${escapeHtml(language)}</figcaption>`
-      : "";
-    const classAttr = language ? ` class="language-${escapeHtml(language)}"` : "";
-    const html = `<figure class="code-block">${label}<pre><code${classAttr}>${escapeHtml(normalized)}</code></pre></figure>`;
+    const html = renderCodeBlock(code, language);
     const token = `%%BLOCK${codeBlocks.length}%%`;
     codeBlocks.push(html);
     return `\n${token}\n`;
@@ -795,7 +1205,7 @@ function renderCode(example) {
   if (!example) {
     return "";
   }
-  return `<pre><code>${escapeHtml(String(example).replace(/\t/g, "    "))}</code></pre>`;
+  return renderCodeBlock(example, "gdscript");
 }
 
 function isStarter(item) {
@@ -805,7 +1215,6 @@ function isStarter(item) {
 function starterBadge(item) {
   return isStarter(item) ? '<span class="nav-badge">Godot project</span>' : "";
 }
-
 
 function moduleTitle(id) {
   const module = outline ? getModule(id) : null;
@@ -878,6 +1287,10 @@ function renderDashboard(progress) {
   const xp = getTotalXp(progress);
   const { current, next } = getRankInfo(xp);
   const passed = passedLessonCount(progress);
+  const streak = getDisplayStreak(progress);
+  const bestStreak = (progress.streak && progress.streak.best) || 0;
+  const dueCount = getDueReviewItems(progress).length;
+  const drillCount = Object.keys(progress.drillsCompleted || {}).length;
   let barPercent = 100;
   let barLabel = "Max rank reached";
   let nextText = "You are at the top of the roster.";
@@ -892,6 +1305,8 @@ function renderDashboard(progress) {
   const continueHtml = continueModule
     ? `<a class="btn btn-primary" id="continue-lesson" href="#/lesson/${continueModule.id}">Continue: ${continueModule.id}. ${escapeHtml(continueModule.title)}</a>`
     : `<p class="continue-done" id="continue-lesson">All missions complete.</p>`;
+  const streakLabel = streak === 1 ? "1 day" : `${streak} days`;
+  const dueLabel = dueCount === 1 ? "1 item due" : `${dueCount} items due`;
 
   return `
     <section class="dashboard" aria-label="Bootcamp progress">
@@ -912,8 +1327,16 @@ function renderDashboard(progress) {
           <div class="xp-bar-fill" style="width: ${barPercent}%"></div>
         </div>
       </div>
-      <p class="lessons-passed">Lessons passed <strong>${passed} / ${TOTAL_MODULE_COUNT}</strong></p>
-      ${continueHtml}
+      <div class="dashboard-stats">
+        <p class="lessons-passed">Lessons passed <strong>${passed} / ${TOTAL_MODULE_COUNT}</strong></p>
+        <p class="dashboard-streak" data-streak="${streak}">Streak <strong>🔥 ${escapeHtml(streakLabel)}</strong>${bestStreak ? ` · best ${bestStreak}` : ""}</p>
+        <p class="dashboard-drills">Drills <strong>${drillCount} / ${TOTAL_DRILL_COUNT}</strong></p>
+      </div>
+      <div class="dashboard-actions">
+        ${continueHtml}
+        <a class="btn" href="#/review">Daily Review${dueCount ? ` · ${dueLabel}` : ""}</a>
+        <a class="btn" href="#/cheatsheet">Cheat sheet</a>
+      </div>
       <h3>Achievements</h3>
       ${renderBadgeGrid(progress)}
     </section>
@@ -1002,7 +1425,7 @@ function renderHome() {
       </div>
       <section class="settings-panel" aria-label="Progress settings">
         <h2>Progress settings</h2>
-        <p>Your rank, XP, badges, and quiz scores are saved on this device only. Export a file to copy progress from your laptop to your phone, or the other way around.</p>
+        <p>Your rank, XP, badges, typing drills, review queue, streak, and quiz scores are saved on this device only. Export a file to copy progress from your laptop to your phone, or the other way around.</p>
         <div class="settings-actions">
           <button type="button" class="btn" id="export-progress">Export progress</button>
           <button type="button" class="btn" id="import-progress-btn">Import progress</button>
@@ -1173,7 +1596,7 @@ function renderQuizHtml(module, quiz) {
             </li>`;
           })
           .join("");
-        return `<div class="quiz-question" data-answer="${question.answer}">
+        return `<div class="quiz-question" data-answer="${question.answer}" data-question-id="${question.id || qIndex + 1}">
           <p><strong>${qIndex + 1}.</strong> ${renderInline(question.prompt)}</p>
           <ul class="quiz-choices">${choices}</ul>
           <p class="quiz-explain" hidden></p>
@@ -1201,15 +1624,44 @@ function renderQuizHtml(module, quiz) {
   }
 }
 
-async function loadQuizData(module) {
-  if (!module.quiz) {
+async function loadQuizData(moduleOrId) {
+  const module = typeof moduleOrId === "object" ? moduleOrId : outline && getModule(moduleOrId);
+  if (!module || !module.quiz) {
     return null;
   }
-  const response = await fetch(module.quiz);
-  if (!response.ok) {
+  if (quizCache.has(module.id)) {
+    return quizCache.get(module.id);
+  }
+  try {
+    const response = await fetch(module.quiz);
+    const data = response.ok ? await response.json() : null;
+    quizCache.set(module.id, data);
+    return data;
+  } catch (error) {
+    console.warn("Quiz failed to load:", error);
+    quizCache.set(module.id, null);
     return null;
   }
-  return response.json();
+}
+
+async function loadDrillData(moduleOrId) {
+  const module = typeof moduleOrId === "object" ? moduleOrId : outline && getModule(moduleOrId);
+  if (!module || !module.drills) {
+    return null;
+  }
+  if (drillCache.has(module.id)) {
+    return drillCache.get(module.id);
+  }
+  try {
+    const response = await fetch(module.drills);
+    const data = response.ok ? await response.json() : null;
+    drillCache.set(module.id, data);
+    return data;
+  } catch (error) {
+    console.warn("Drills failed to load:", error);
+    drillCache.set(module.id, null);
+    return null;
+  }
 }
 
 function bindQuiz(quiz) {
@@ -1227,6 +1679,7 @@ function bindQuiz(quiz) {
   const lessonId = quiz.lessonId || Number(root.getAttribute("data-lesson-id"));
   const total = questions.length;
   const explains = (quiz.questions || []).map((question) => question.explain || "");
+  let missed = [];
 
   function updateBestLabel(score) {
     if (!bestEl || score === null) {
@@ -1247,7 +1700,7 @@ function bindQuiz(quiz) {
         correct += 1;
       }
     });
-    const result = recordQuizResult(lessonId, correct);
+    const result = recordQuizResult(lessonId, correct, { missed });
     scoreEl.textContent = `You scored ${correct} out of ${total}. Your best is ${result.best} out of ${total}.`;
     if (xpEl) {
       xpEl.hidden = false;
@@ -1267,6 +1720,7 @@ function bindQuiz(quiz) {
   }
 
   function resetQuiz() {
+    missed = [];
     questions.forEach((block) => {
       block.removeAttribute("data-answered");
       block.removeAttribute("data-correct");
@@ -1296,6 +1750,7 @@ function bindQuiz(quiz) {
 
   questions.forEach((block, qIndex) => {
     const answer = Number(block.getAttribute("data-answer"));
+    const questionId = Number(block.getAttribute("data-question-id")) || (quiz.questions[qIndex] && quiz.questions[qIndex].id) || qIndex + 1;
     const explainEl = block.querySelector(".quiz-explain");
     block.querySelectorAll("button").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1317,6 +1772,9 @@ function bindQuiz(quiz) {
         if (correctBtn) {
           correctBtn.classList.add("is-correct");
         }
+        if (!isCorrect) {
+          missed.push({ type: "quiz", lessonId, questionId });
+        }
         if (explainEl) {
           const prefix = isCorrect ? "Correct. " : "Not quite. ";
           explainEl.hidden = false;
@@ -1335,6 +1793,755 @@ function bindQuiz(quiz) {
       root.scrollIntoView({ block: "start", behavior: "smooth" });
     });
   }
+}
+
+function stripLineCommentAndSemicolon(line) {
+  let out = "";
+  let inSingle = false;
+  let inDouble = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (inSingle) {
+      out += ch;
+      if (ch === "\\" && i + 1 < line.length) {
+        out += line[i + 1];
+        i += 1;
+      } else if (ch === "'") {
+        inSingle = false;
+      }
+      continue;
+    }
+    if (inDouble) {
+      out += ch;
+      if (ch === "\\" && i + 1 < line.length) {
+        out += line[i + 1];
+        i += 1;
+      } else if (ch === '"') {
+        inDouble = false;
+      }
+      continue;
+    }
+    if (ch === "'") {
+      inSingle = true;
+      out += ch;
+      continue;
+    }
+    if (ch === '"') {
+      inDouble = true;
+      out += ch;
+      continue;
+    }
+    if (ch === "#") {
+      break;
+    }
+    if (ch === "/" && line[i + 1] === "/") {
+      break;
+    }
+    out += ch;
+  }
+  return out.replace(/;+\s*$/, "").trim();
+}
+
+function normalizeQuotes(value) {
+  let out = "";
+  let i = 0;
+  const s = String(value);
+  while (i < s.length) {
+    const ch = s[i];
+    if (ch === '"') {
+      out += ch;
+      i += 1;
+      while (i < s.length) {
+        out += s[i];
+        if (s[i] === "\\" && i + 1 < s.length) {
+          out += s[i + 1];
+          i += 2;
+          continue;
+        }
+        if (s[i] === '"') {
+          i += 1;
+          break;
+        }
+        i += 1;
+      }
+      continue;
+    }
+    if (ch === "'") {
+      let content = "";
+      let closed = false;
+      i += 1;
+      while (i < s.length) {
+        if (s[i] === "\\" && i + 1 < s.length) {
+          content += s[i] + s[i + 1];
+          i += 2;
+          continue;
+        }
+        if (s[i] === "'") {
+          closed = true;
+          i += 1;
+          break;
+        }
+        content += s[i];
+        i += 1;
+      }
+      if (closed && !content.includes('"')) {
+        out += `"${content}"`;
+      } else {
+        out += `'${content}${closed ? "'" : ""}`;
+      }
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  return out;
+}
+
+function normalizeCode(input) {
+  const cleaned = String(input ?? "")
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => stripLineCommentAndSemicolon(line.replace(/\t/g, " ")))
+    .filter((line) => line.length > 0)
+    .join("\n");
+  let s = normalizeQuotes(cleaned).replace(/\s+/g, " ").trim();
+  s = s.replace(/\s*\(\s*/g, "(");
+  s = s.replace(/\s*\)\s*/g, ")");
+  s = s.replace(/\s*\[\s*/g, "[");
+  s = s.replace(/\s*\]\s*/g, "]");
+  s = s.replace(/\s*\{\s*/g, "{");
+  s = s.replace(/\s*\}\s*/g, "}");
+  s = s.replace(/\s*,\s*/g, ", ");
+  s = s.replace(/:(?=\s*[A-Za-z_])/g, ": ");
+  s = s.replace(/:\s+/g, ": ");
+  s = s.replace(/\s*:=\s*/g, "\0COLONEQ\0");
+  s = s.replace(/\s*==\s*/g, "\0EQ\0");
+  s = s.replace(/\s*!=\s*/g, "\0NE\0");
+  s = s.replace(/\s*<=\s*/g, "\0LE\0");
+  s = s.replace(/\s*>=\s*/g, "\0GE\0");
+  s = s.replace(/\s*->\s*/g, "\0ARROW\0");
+  s = s.replace(/\s*\+=\s*/g, "\0PE\0");
+  s = s.replace(/\s*-=\s*/g, "\0ME\0");
+  s = s.replace(/\s*>\s*/g, "\0GT\0");
+  s = s.replace(/\s*<\s*/g, "\0LT\0");
+  s = s.replace(/\s*=\s*/g, " = ");
+  s = s.replace(/\0COLONEQ\0/g, " := ");
+  s = s.replace(/\0EQ\0/g, " == ");
+  s = s.replace(/\0NE\0/g, " != ");
+  s = s.replace(/\0LE\0/g, " <= ");
+  s = s.replace(/\0GE\0/g, " >= ");
+  s = s.replace(/\0GT\0/g, " > ");
+  s = s.replace(/\0LT\0/g, " < ");
+  s = s.replace(/\0ARROW\0/g, " -> ");
+  s = s.replace(/\0PE\0/g, " += ");
+  s = s.replace(/\0ME\0/g, " -= ");
+  s = s.replace(/!\s*/g, "!");
+  s = s.replace(/\b(if|elif|while|for|match|return|await|and|or|not)\(/g, "$1 (");
+  s = s.replace(/\s+/g, " ").trim();
+  s = s.replace(/\)\s*:/g, "):");
+  s = s.replace(/\s+:(?!=)/g, ":");
+  return s;
+}
+
+function answersMatch(input, accepted) {
+  const normalized = normalizeCode(input);
+  if (!normalized) {
+    return false;
+  }
+  return (accepted || []).some((item) => normalizeCode(item) === normalized);
+}
+
+function expectedAnswer(drill) {
+  return (drill.accepted && drill.accepted[0]) || "";
+}
+
+function renderDrillsHtml(module, drills) {
+  if (!drills || !drills.drills || !drills.drills.length) {
+    return "";
+  }
+  const progress = loadProgress();
+  const items = drills.drills
+    .map((drill, index) => {
+      const key = `${module.id}:${drill.id}`;
+      const done = Boolean(progress.drillsCompleted[key]);
+      return `<div class="drill${done ? " is-complete" : ""}" data-drill-id="${drill.id}">
+        <p class="drill-prompt"><strong>${index + 1}.</strong> ${renderInline(drill.prompt)}${done ? ' <span class="drill-done-flag">Completed</span>' : ""}</p>
+        <label class="visually-hidden" for="drill-input-${module.id}-${drill.id}">Your answer for drill ${index + 1}</label>
+        <textarea id="drill-input-${module.id}-${drill.id}" class="drill-input" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>
+        <div class="drill-actions">
+          <button type="button" class="btn btn-primary drill-check">Check</button>
+          <button type="button" class="btn drill-hint">Hint</button>
+        </div>
+        <p class="drill-hint-text" hidden></p>
+        <p class="drill-feedback" hidden></p>
+      </div>`;
+    })
+    .join("");
+  const completed = drills.drills.filter((drill) => progress.drillsCompleted[`${module.id}:${drill.id}`]).length;
+  return `<section class="drills" aria-label="Typing drills" data-lesson-id="${module.id}">
+    <h2>${escapeHtml(drills.title || "Typing drills")}</h2>
+    <p>${escapeHtml(drills.description || "Type the GDScript. Spacing is flexible, and a trailing semicolon is fine.")}</p>
+    <p class="drill-progress">${completed} / ${drills.drills.length} completed · ${XP_PER_DRILL} XP each, first time only</p>
+    ${items}
+  </section>`;
+}
+
+function bindTabInsertion(textarea) {
+  textarea.addEventListener("keydown", (event) => {
+    if (event.key !== "Tab" || event.altKey || event.ctrlKey || event.metaKey) {
+      return;
+    }
+    event.preventDefault();
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const value = textarea.value;
+    const insert = event.shiftKey ? "" : "\t";
+    if (event.shiftKey && start === end) {
+      return;
+    }
+    textarea.value = `${value.slice(0, start)}${insert}${value.slice(end)}`;
+    const cursor = start + insert.length;
+    textarea.selectionStart = cursor;
+    textarea.selectionEnd = cursor;
+  });
+}
+
+function bindDrills(module, drills) {
+  const root = main.querySelector(".drills");
+  if (!root || !drills) {
+    return;
+  }
+  const lessonId = module.id;
+  const progressEl = root.querySelector(".drill-progress");
+
+  function updateProgressLabel() {
+    const progress = loadProgress();
+    const completed = drills.drills.filter((drill) => progress.drillsCompleted[`${lessonId}:${drill.id}`]).length;
+    if (progressEl) {
+      progressEl.textContent = `${completed} / ${drills.drills.length} completed · ${XP_PER_DRILL} XP each, first time only`;
+    }
+  }
+
+  root.querySelectorAll(".drill").forEach((block) => {
+    const drillId = Number(block.getAttribute("data-drill-id"));
+    const drill = drills.drills.find((item) => item.id === drillId);
+    if (!drill) {
+      return;
+    }
+    const input = block.querySelector(".drill-input");
+    const checkBtn = block.querySelector(".drill-check");
+    const hintBtn = block.querySelector(".drill-hint");
+    const hintEl = block.querySelector(".drill-hint-text");
+    const feedbackEl = block.querySelector(".drill-feedback");
+    let misses = 0;
+
+    if (input) {
+      bindTabInsertion(input);
+    }
+
+    if (hintBtn && hintEl) {
+      hintBtn.addEventListener("click", () => {
+        hintEl.hidden = false;
+        hintEl.textContent = drill.hint || "Look back at the lesson example and try again.";
+      });
+    }
+
+    if (checkBtn) {
+      checkBtn.addEventListener("click", () => {
+        const value = input ? input.value : "";
+        const isCorrect = answersMatch(value, drill.accepted);
+        const result = recordDrillResult(lessonId, drill, isCorrect);
+        if (feedbackEl) {
+          feedbackEl.hidden = false;
+          feedbackEl.classList.toggle("is-correct", isCorrect);
+          feedbackEl.classList.toggle("is-wrong", !isCorrect);
+        }
+        if (isCorrect) {
+          block.classList.add("is-complete");
+          const xpNote = result.firstCompletion
+            ? ` +${result.xpGained} XP.`
+            : " Already completed, so no new XP.";
+          if (feedbackEl) {
+            feedbackEl.innerHTML = `Correct. ${renderInline(drill.explain || "")}${escapeHtml(xpNote)}`;
+          }
+          if (!block.querySelector(".drill-done-flag")) {
+            const prompt = block.querySelector(".drill-prompt");
+            if (prompt) {
+              prompt.insertAdjacentHTML("beforeend", ' <span class="drill-done-flag">Completed</span>');
+            }
+          }
+          updateProgressLabel();
+          return;
+        }
+        misses += 1;
+        let message = "Not quite. ";
+        if (misses >= REVIEW_MISS_LIMIT) {
+          message += `A valid answer is <code>${escapeHtml(expectedAnswer(drill))}</code>. `;
+        } else {
+          message += "Check the name, punctuation, and quotes, then try again. ";
+        }
+        if (drill.explain && misses >= REVIEW_MISS_LIMIT) {
+          message += renderInline(drill.explain);
+        }
+        if (feedbackEl) {
+          feedbackEl.innerHTML = message;
+        }
+      });
+    }
+  });
+}
+
+function shuffle(list) {
+  const copy = list.slice();
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = temp;
+  }
+  return copy;
+}
+
+async function resolveReviewContent(item) {
+  if (item.type === "quiz") {
+    const quiz = await loadQuizData(item.lessonId);
+    const question = quiz && (quiz.questions || []).find((entry) => Number(entry.id) === Number(item.questionId));
+    if (!question) {
+      return null;
+    }
+    return { kind: "quiz", lessonId: item.lessonId, question, item };
+  }
+  const drills = await loadDrillData(item.lessonId);
+  const drill = drills && (drills.drills || []).find((entry) => Number(entry.id) === Number(item.drillId));
+  if (!drill) {
+    return null;
+  }
+  return { kind: "drill", lessonId: item.lessonId, drill, item };
+}
+
+async function collectFillerItems(excludeIds, progress) {
+  const fillers = [];
+  for (let lessonId = 1; lessonId <= QUIZ_MODULE_COUNT; lessonId += 1) {
+    if (!isLessonPassed(lessonId, progress)) {
+      continue;
+    }
+    const quiz = await loadQuizData(lessonId);
+    (quiz && quiz.questions ? quiz.questions : []).forEach((question) => {
+      const id = reviewItemId("quiz", lessonId, question.id);
+      if (!excludeIds.has(id)) {
+        fillers.push({ type: "quiz", lessonId, questionId: question.id, id, filler: true });
+      }
+    });
+    const drills = await loadDrillData(lessonId);
+    (drills && drills.drills ? drills.drills : []).forEach((drill) => {
+      const id = reviewItemId("drill", lessonId, drill.id);
+      if (!excludeIds.has(id)) {
+        fillers.push({ type: "drill", lessonId, drillId: drill.id, id, filler: true });
+      }
+    });
+  }
+  return shuffle(fillers);
+}
+
+async function buildReviewSession() {
+  const progress = loadProgress();
+  const due = getDueReviewItems(progress);
+  const selected = [];
+  const exclude = new Set();
+  for (const item of due) {
+    if (selected.length >= REVIEW_DECK_SIZE) {
+      break;
+    }
+    const resolved = await resolveReviewContent(item);
+    if (!resolved) {
+      continue;
+    }
+    selected.push(resolved);
+    exclude.add(item.id);
+  }
+  if (selected.length < REVIEW_DECK_SIZE) {
+    const fillers = await collectFillerItems(exclude, progress);
+    for (const filler of fillers) {
+      if (selected.length >= REVIEW_DECK_SIZE) {
+        break;
+      }
+      const resolved = await resolveReviewContent(filler);
+      if (!resolved) {
+        continue;
+      }
+      resolved.item = filler;
+      selected.push(resolved);
+      exclude.add(filler.id);
+    }
+  }
+  reviewSession = {
+    items: selected,
+    index: 0,
+    results: [],
+    startedAt: Date.now(),
+  };
+  return reviewSession;
+}
+
+function renderReviewQuizCard(entry, index, total) {
+  const question = entry.question;
+  const choices = question.choices
+    .map((choice, cIndex) => {
+      const letter = String.fromCharCode(65 + cIndex);
+      return `<li>
+        <button type="button" data-choice="${cIndex}">
+          <span class="choice-letter">${letter})</span>
+          <span class="choice-text">${renderInline(choice)}</span>
+        </button>
+      </li>`;
+    })
+    .join("");
+  const source = entry.item && entry.item.filler ? "Practice from a passed lesson" : "Due from your review queue";
+  return `<section class="review-card quiz" data-kind="quiz">
+    <p class="review-meta">${index + 1} / ${total} · ${escapeHtml(source)} · Lesson ${entry.lessonId}</p>
+    <p class="drill-prompt">${renderInline(question.prompt)}</p>
+    <ul class="quiz-choices">${choices}</ul>
+    <p class="quiz-explain" hidden></p>
+    <div class="review-advance" hidden>
+      <button type="button" class="btn btn-primary review-next">Next</button>
+    </div>
+  </section>`;
+}
+
+function renderReviewDrillCard(entry, index, total) {
+  const drill = entry.drill;
+  const source = entry.item && entry.item.filler ? "Practice from a passed lesson" : "Due from your review queue";
+  return `<section class="review-card drills" data-kind="drill">
+    <p class="review-meta">${index + 1} / ${total} · ${escapeHtml(source)} · Lesson ${entry.lessonId}</p>
+    <p class="drill-prompt">${renderInline(drill.prompt)}</p>
+    <label class="visually-hidden" for="review-drill-input">Your answer</label>
+    <textarea id="review-drill-input" class="drill-input" rows="3" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>
+    <div class="drill-actions">
+      <button type="button" class="btn btn-primary drill-check">Check</button>
+      <button type="button" class="btn drill-hint">Hint</button>
+    </div>
+    <p class="drill-hint-text" hidden></p>
+    <p class="drill-feedback" hidden></p>
+    <div class="review-advance" hidden>
+      <button type="button" class="btn btn-primary review-next">Next</button>
+    </div>
+  </section>`;
+}
+
+function finishReviewSession() {
+  const session = reviewSession;
+  const correct = session.results.filter((item) => item.correct).length;
+  const total = session.results.length;
+  main.querySelector(".review-stage").innerHTML = `
+    <section class="review-summary">
+      <h2>Review complete</h2>
+      <p>You reviewed ${total} item${total === 1 ? "" : "s"} and got ${correct} right.</p>
+      <p>Missed items return tomorrow, then after 3, 7, and 14 days if you keep getting them right.</p>
+      <div class="dashboard-actions">
+        <button type="button" class="btn btn-primary" id="review-again">Review again</button>
+        <a class="btn" href="#/">Back to dashboard</a>
+      </div>
+    </section>
+  `;
+  const again = document.getElementById("review-again");
+  if (again) {
+    again.addEventListener("click", async () => {
+      reviewSession = null;
+      await renderReviewPage();
+    });
+  }
+}
+
+function bindReviewCard(entry) {
+  const card = main.querySelector(".review-card");
+  if (!card) {
+    return;
+  }
+  const advance = card.querySelector(".review-advance");
+  const nextBtn = card.querySelector(".review-next");
+
+  function completeItem(isCorrect) {
+    const progress = loadProgress();
+    const fromQueue = progress.review && entry.item && progress.review[entry.item.id];
+    if (fromQueue || !isCorrect) {
+      if (isCorrect && fromQueue) {
+        applyReviewResult(progress, fromQueue, true);
+      } else if (!isCorrect) {
+        enqueueReviewItem(
+          progress,
+          entry.item,
+          Date.now() + (fromQueue ? LEITNER_INTERVALS_MS[0] : 0)
+        );
+      }
+    }
+    recordActivity(progress);
+    const unlocked = evaluateAchievements(progress, { now: new Date() });
+    persistProgress(progress);
+    announceUnlocks(unlocked, getRankInfo(getTotalXp(progress)).current, getRankInfo(getTotalXp(progress)).current);
+    refreshChrome();
+    reviewSession.results.push({ id: entry.item.id, correct: isCorrect });
+    if (advance) {
+      advance.hidden = false;
+    }
+    if (nextBtn) {
+      nextBtn.textContent = reviewSession.index + 1 >= reviewSession.items.length ? "See results" : "Next";
+    }
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => {
+      reviewSession.index += 1;
+      if (reviewSession.index >= reviewSession.items.length) {
+        finishReviewSession();
+      } else {
+        paintReviewCard();
+      }
+    });
+  }
+
+  if (entry.kind === "quiz") {
+    const answer = Number(entry.question.answer);
+    const explainEl = card.querySelector(".quiz-explain");
+    card.querySelectorAll(".quiz-choices button").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (card.hasAttribute("data-answered")) {
+          return;
+        }
+        const choice = Number(button.getAttribute("data-choice"));
+        const isCorrect = choice === answer;
+        card.setAttribute("data-answered", "true");
+        button.classList.add(isCorrect ? "is-correct" : "is-wrong");
+        const correctBtn = card.querySelector(`[data-choice="${answer}"]`);
+        if (correctBtn) {
+          correctBtn.classList.add("is-correct");
+        }
+        card.querySelectorAll(".quiz-choices button").forEach((item) => {
+          item.disabled = true;
+        });
+        if (explainEl) {
+          explainEl.hidden = false;
+          explainEl.classList.toggle("is-correct", isCorrect);
+          explainEl.classList.toggle("is-wrong", !isCorrect);
+          explainEl.innerHTML = `${isCorrect ? "Correct. " : "Not quite. "}${renderInline(entry.question.explain || "")}`;
+        }
+        completeItem(isCorrect);
+      });
+    });
+    return;
+  }
+
+  const input = card.querySelector(".drill-input");
+  const checkBtn = card.querySelector(".drill-check");
+  const hintBtn = card.querySelector(".drill-hint");
+  const hintEl = card.querySelector(".drill-hint-text");
+  const feedbackEl = card.querySelector(".drill-feedback");
+  let misses = 0;
+  if (input) {
+    bindTabInsertion(input);
+  }
+  if (hintBtn && hintEl) {
+    hintBtn.addEventListener("click", () => {
+      hintEl.hidden = false;
+      hintEl.textContent = entry.drill.hint || "Look back at the lesson example and try again.";
+    });
+  }
+  if (checkBtn) {
+    checkBtn.addEventListener("click", () => {
+      if (card.hasAttribute("data-answered")) {
+        return;
+      }
+      const isCorrect = answersMatch(input ? input.value : "", entry.drill.accepted);
+      if (feedbackEl) {
+        feedbackEl.hidden = false;
+        feedbackEl.classList.toggle("is-correct", isCorrect);
+        feedbackEl.classList.toggle("is-wrong", !isCorrect);
+      }
+      if (isCorrect) {
+        if (feedbackEl) {
+          feedbackEl.innerHTML = `Correct. ${renderInline(entry.drill.explain || "")}`;
+        }
+        card.setAttribute("data-answered", "true");
+        if (input) {
+          input.disabled = true;
+        }
+        checkBtn.disabled = true;
+        completeItem(true);
+        return;
+      }
+      misses += 1;
+      let message = "Not quite. ";
+      if (misses >= REVIEW_MISS_LIMIT) {
+        message += `A valid answer is <code>${escapeHtml(expectedAnswer(entry.drill))}</code>. `;
+        message += renderInline(entry.drill.explain || "");
+        if (feedbackEl) {
+          feedbackEl.innerHTML = message;
+        }
+        card.setAttribute("data-answered", "true");
+        if (input) {
+          input.disabled = true;
+        }
+        checkBtn.disabled = true;
+        completeItem(false);
+        return;
+      }
+      if (feedbackEl) {
+        feedbackEl.textContent = `${message}Check the name, punctuation, and quotes, then try again.`;
+      }
+    });
+  }
+}
+
+function paintReviewCard() {
+  const session = reviewSession;
+  const entry = session.items[session.index];
+  const stage = main.querySelector(".review-stage");
+  if (!stage || !entry) {
+    finishReviewSession();
+    return;
+  }
+  stage.innerHTML =
+    entry.kind === "quiz"
+      ? renderReviewQuizCard(entry, session.index, session.items.length)
+      : renderReviewDrillCard(entry, session.index, session.items.length);
+  bindReviewCard(entry);
+}
+
+async function renderReviewPage() {
+  const progress = loadProgress();
+  const dueCount = getDueReviewItems(progress).length;
+  if (!reviewSession || reviewSession.index >= (reviewSession.items || []).length) {
+    await buildReviewSession();
+  }
+  const session = reviewSession;
+  const empty = !session.items.length;
+  main.innerHTML = `
+    <article class="content review-page">
+      <p class="kicker">Daily Review</p>
+      <h1>Daily Review</h1>
+      <p class="lead">Five quick checks. Due review items come first, then a mix from lessons you have already passed.</p>
+      <p class="review-streak">Streak <strong>🔥 ${getDisplayStreak(progress)}</strong> · ${dueCount} item${dueCount === 1 ? "" : "s"} waiting in your queue.</p>
+      <div class="review-stage"></div>
+    </article>
+  `;
+  if (empty) {
+    main.querySelector(".review-stage").innerHTML = `
+      <section class="review-empty">
+        <h2>Nothing to review yet</h2>
+        <p>Pass a lesson quiz or complete a typing drill, then come back for a mixed five-question deck. Missed questions and drills will also show up here.</p>
+        <p><a class="btn btn-primary" href="#/lesson/1">Start Lesson 1</a></p>
+      </section>
+    `;
+  } else if (session.index >= session.items.length) {
+    finishReviewSession();
+  } else {
+    paintReviewCard();
+  }
+  document.title = "Daily Review · GDScript Tutor";
+}
+
+function renderCheatSheet() {
+  const sections = [
+    {
+      title: "Variables, const, and @export",
+      code: `var fear := 0.0
+var fear: float = 0.0
+@export var max_fear := 100.0
+const MAX_INVENTORY_SLOTS := 8
+flashlight_battery = 80.0`,
+    },
+    {
+      title: "Types",
+      code: `var health: int = 100
+var fear: float = 0.0
+var current_room: String = "Basement"
+var is_flashlight_on: bool = false
+# null means nothing is here yet
+if monster != null:
+    pass`,
+    },
+    {
+      title: "Arrays",
+      code: `var inventory: Array[String] = ["flashlight", "key"]
+inventory[0]  # "flashlight"
+inventory.append("keycard")`,
+    },
+    {
+      title: "Dictionaries",
+      code: `var stats := {"fear": 0.0, "stamina": 100.0}
+stats["fear"]
+# Godot also allows: {fear = 0.0, stamina = 100.0}`,
+    },
+    {
+      title: "if / elif / else / match",
+      code: `if fear > 80.0:
+    print("panic")
+elif fear > 40.0:
+    print("uneasy")
+else:
+    print("calm")
+
+if mic_volume > threshold and distance <= hear_distance:
+    player_spotted.emit()
+
+if not is_flashlight_on:
+    pass
+
+match state:
+    "idle":
+        pass
+    _:
+        pass`,
+    },
+    {
+      title: "for / while / break / continue",
+      code: `for i in range(3):
+    print(i)  # 0, 1, 2
+
+for item in inventory:
+    if item == "empty":
+        continue
+    if item == "key":
+        break
+
+while fear < max_fear:
+    raise_fear(1.0)`,
+    },
+    {
+      title: "func / return / await",
+      code: `func raise_fear(amount: float) -> void:
+    fear = clampf(fear + amount, 0.0, max_fear)
+
+func get_fear() -> float:
+    return fear
+
+await get_tree().create_timer(0.5).timeout`,
+    },
+    {
+      title: "Signals preview",
+      code: `signal flashlight_toggled(is_on: bool)
+flashlight_toggled.emit(is_flashlight_on)
+flashlight_toggled.connect(_on_flashlight_toggled)`,
+    },
+  ];
+
+  const body = sections
+    .map(
+      (section) => `<section class="cheatsheet-section">
+      <h2>${escapeHtml(section.title)}</h2>
+      ${renderCodeBlock(section.code, "gdscript")}
+    </section>`
+    )
+    .join("");
+
+  main.innerHTML = `
+    <article class="content cheatsheet-page">
+      <p class="kicker">Reference</p>
+      <h1>Cheat sheet</h1>
+      <p class="lead">The syntax from lessons 1 through 5, plus a short signals preview for the Godot missions. Use the Copy button on any block while you work in the editor.</p>
+      ${body}
+    </article>
+  `;
+  document.title = "Cheat sheet · GDScript Tutor";
 }
 
 async function loadLessonMarkdown(module) {
@@ -1426,6 +2633,17 @@ async function renderLesson(moduleId, subtopicId) {
     }
   }
 
+  let drills = null;
+  let drillsHtml = "";
+  if (module.drills) {
+    try {
+      drills = await loadDrillData(module);
+      drillsHtml = renderDrillsHtml(module, drills);
+    } catch (error) {
+      console.warn("Drills failed to load:", error);
+    }
+  }
+
   const titleHtml = `<h1>${escapeHtml(title)}</h1>`;
 
   main.innerHTML = `
@@ -1439,20 +2657,34 @@ async function renderLesson(moduleId, subtopicId) {
       </div>
       ${lessonBody}
       ${quizHtml}
+      ${drillsHtml}
       ${renderMissionPanel(module)}
       ${pager(links.prev, links.next)}
     </article>
   `;
   bindQuiz(quiz);
+  bindDrills(module, drills);
   bindMissionButton(module);
   document.title = `${title} · GDScript Tutor`;
 }
 
+function dismissToasts() {
+  if (!toastRegion) {
+    return;
+  }
+  toastRegion.querySelectorAll(".toast").forEach((el) => el.remove());
+}
+
 async function render() {
   const route = parseHash();
+  dismissToasts();
   refreshChrome(route);
   if (route.view === "home") {
     renderHome();
+  } else if (route.view === "review") {
+    await renderReviewPage();
+  } else if (route.view === "cheatsheet") {
+    renderCheatSheet();
   } else {
     await renderLesson(route.moduleId, route.subtopicId);
   }
@@ -1485,10 +2717,50 @@ function bindResetDialog() {
   }
 }
 
+async function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+
+function bindCopyButtons() {
+  document.addEventListener("click", async (event) => {
+    const button = event.target.closest(".copy-btn");
+    if (!button) {
+      return;
+    }
+    const text = button.getAttribute("data-code") || "";
+    const previous = button.textContent;
+    try {
+      await copyText(text);
+      button.textContent = "Copied";
+      button.classList.add("is-copied");
+    } catch (error) {
+      console.warn("Copy failed:", error);
+      button.textContent = "Copy failed";
+    }
+    window.setTimeout(() => {
+      button.textContent = previous;
+      button.classList.remove("is-copied");
+    }, 1600);
+  });
+}
+
 async function init() {
   registerServiceWorker();
   bindResetDialog();
   bindProgressSettings();
+  bindCopyButtons();
   navToggle.addEventListener("click", () => {
     const open = navToggle.getAttribute("aria-expanded") !== "true";
     setNavOpen(open);

@@ -1,0 +1,59 @@
+{
+  "lessonId": 3,
+  "title": "Conditionals — typing drills",
+  "description": "Type if, elif, and match lines the horror systems will use. Spacing is flexible, and a trailing semicolon is fine.",
+  "drills": [
+    {
+      "id": 1,
+      "prompt": "Write an if line that checks whether fear is greater than 80.0.",
+      "accepted": [
+        "if fear > 80.0:",
+        "if fear > 80:"
+      ],
+      "hint": "if, then the comparison, then a colon at the end of the line.",
+      "explain": "This is the panic branch. When fear creeps past 80, the body under this if will run."
+    },
+    {
+      "id": 2,
+      "prompt": "Write an if line that is true only when mic_volume is greater than threshold and distance is less than or equal to hear_distance.",
+      "accepted": [
+        "if mic_volume > threshold and distance <= hear_distance:",
+        "if mic_volume > threshold and distance <= hear_distance :",
+        "if (mic_volume > threshold and distance <= hear_distance):"
+      ],
+      "hint": "Use and so both sides must be true. End the line with a colon.",
+      "explain": "and means both sides must be true. The monster hears you only if you are loud enough and close enough."
+    },
+    {
+      "id": 3,
+      "prompt": "Write an if line that runs when the flashlight is off, using the variable is_flashlight_on.",
+      "accepted": [
+        "if not is_flashlight_on:",
+        "if !is_flashlight_on:",
+        "if is_flashlight_on == false:",
+        "if is_flashlight_on == false :"
+      ],
+      "hint": "not flips a bool. If the light is off, is_flashlight_on is false.",
+      "explain": "not is_flashlight_on is true when the flashlight is off. The ! prefix is also valid in GDScript."
+    },
+    {
+      "id": 4,
+      "prompt": "Write an elif line that checks whether stamina is less than or equal to 0.0.",
+      "accepted": [
+        "elif stamina <= 0.0:",
+        "elif stamina <= 0:"
+      ],
+      "hint": "Use elif, not a second if, and end the line with a colon.",
+      "explain": "elif is the next branch in a chain. It runs only when the if above it was false and this condition is true."
+    },
+    {
+      "id": 5,
+      "prompt": "Write the fallback branch line in a match statement.",
+      "accepted": [
+        "_:"
+      ],
+      "hint": "It is a single underscore, then a colon. It works like else.",
+      "explain": "The _ branch is the safety net in a match. It runs when the value did not match any named branch above it."
+    }
+  ]
+}

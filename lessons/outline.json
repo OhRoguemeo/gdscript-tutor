@@ -4,7 +4,7 @@
   "version": 1,
   "notes": {
     "purpose": "This outline is for the GDScript tutor web app, a responsive progressive web app you can use on a PC, a laptop, or a phone. The tutor is being built before the Godot 4 first-person horror game, so every lesson is a skill you will use in that game.",
-    "noSandbox": "There is no in-browser code runner in version 1, and no server-side sandbox. You will read the lessons, take short quizzes, and — for the Signals practice and the Capstone mini-game — download a starter Godot 4 project (.zip) and run it in the Godot editor on your computer.",
+    "noSandbox": "There is no in-browser code runner in version 1, and no server-side sandbox. You will read the lessons, take short quizzes, and \u2014 for the Signals practice and the Capstone mini-game \u2014 download a starter Godot 4 project (.zip) and run it in the Godot editor on your computer.",
     "starterProjects": "Game sections (Module 6 practice and Module 7) use downloadable starter Godot 4 projects. They are not run in the browser. The .zip files will live in the starter-projects/ folder in a later pass. GitHub and GitHub Pages are set up later, on the main PC."
   },
   "modules": [
@@ -35,7 +35,7 @@
         {
           "id": 3,
           "title": "Exported variables and the Inspector",
-          "plainLanguage": "Some values are more fun to tweak without opening the code — starting fear, how fast the battery drains, how far the monster can hear.",
+          "plainLanguage": "Some values are more fun to tweak without opening the code \u2014 starting fear, how fast the battery drains, how far the monster can hear.",
           "godotAngle": "Put @export above a variable and it shows up in the Inspector, where you can change it while you test.",
           "example": "@export var max_fear := 100.0\n@export var hear_distance := 15.0"
         },
@@ -53,7 +53,8 @@
           "godotAngle": "You will later update these every frame or when something happens, for example fear = fear + 5.0 when a door slams. Module 5 will wrap that kind of change in a function.",
           "example": "fear = fear + 5.0"
         }
-      ]
+      ],
+      "drills": "drills/lesson-01-variables.json"
     },
     {
       "id": 2,
@@ -96,11 +97,12 @@
         {
           "id": 5,
           "title": "null and careful checks",
-          "plainLanguage": "null means \"nothing is here yet.\" That is normal when a node or item has not been set. Always check before you use it, or the game can crash at the worst moment — mid-scare.",
+          "plainLanguage": "null means \"nothing is here yet.\" That is normal when a node or item has not been set. Always check before you use it, or the game can crash at the worst moment \u2014 mid-scare.",
           "godotAngle": "Check with if monster != null: before you read the monster's position. In the horror game, that matters when a creature is spawned only after a trigger, not at the start of the scene.",
           "example": "if monster != null:\n    var distance := global_position.distance_to(monster.global_position)"
         }
-      ]
+      ],
+      "drills": "drills/lesson-02-data-types.json"
     },
     {
       "id": 3,
@@ -147,7 +149,8 @@
           "godotAngle": "If fear crosses a threshold, you might shake the camera, darken the edges of the screen, or let the monster move faster. Those rules will live in if and match blocks you can tune in the Inspector with @export thresholds.",
           "example": "@export var panic_threshold := 75.0\n\nif fear >= panic_threshold:\n    monster_speed = 4.0\nelse:\n    monster_speed = 2.0"
         }
-      ]
+      ],
+      "drills": "drills/lesson-03-conditionals.json"
     },
     {
       "id": 4,
@@ -170,7 +173,7 @@
           "id": 2,
           "title": "for loops over arrays",
           "plainLanguage": "\"For each item in the inventory...\" or \"for each nearby sound...\" the game does the same kind of check.",
-          "godotAngle": "break leaves the loop early once a decision is made — no need to keep scanning after the monster has picked a target.",
+          "godotAngle": "break leaves the loop early once a decision is made \u2014 no need to keep scanning after the monster has picked a target.",
           "example": "for sound in heard_sounds:\n    if sound.volume > threshold:\n        investigate(sound.position)\n        break"
         },
         {
@@ -187,7 +190,8 @@
           "godotAngle": "When you loop over characters in range, continue can skip the player themselves or anyone already hiding, and break can stop once you have found the closest threat. That is how a cheap \"who can hear me?\" check stays readable.",
           "example": "for body in nearby_bodies:\n    if body == self or body.is_hiding:\n        continue\n    investigate(body.global_position)\n    break"
         }
-      ]
+      ],
+      "drills": "drills/lesson-04-loops.json"
     },
     {
       "id": 5,
@@ -234,14 +238,15 @@
           "godotAngle": "You will hook toggle_flashlight() to a button or key later. Combined with raise_fear(), you already have the two actions a simple horror vignette needs most.",
           "example": "func toggle_flashlight() -> void:\n    is_flashlight_on = not is_flashlight_on\n    flashlight_light.visible = is_flashlight_on"
         }
-      ]
+      ],
+      "drills": "drills/lesson-05-functions.json"
     },
     {
       "id": 6,
       "slug": "signals",
       "title": "Signals",
       "summary": "A signal is a message a node can send when something happens. Other nodes can listen and react, without being tightly tied together.",
-      "horrorHook": "These same signals — fear_changed, flashlight_toggled, player_spotted — are the nervous system of the full first-person horror game.",
+      "horrorHook": "These same signals \u2014 fear_changed, flashlight_toggled, player_spotted \u2014 are the nervous system of the full first-person horror game.",
       "delivery": "starter-project",
       "deliveryNote": "The practice for this module is not an in-browser exercise. Download a starter Godot 4 project (.zip) and run it in the Godot editor. There is no in-browser code execution for this step.",
       "starterProject": "starter-projects/06-signals-practice.zip",
@@ -249,9 +254,9 @@
         {
           "id": 1,
           "title": "What a signal is",
-          "plainLanguage": "Think of a fire alarm. The alarm does not know who will respond. It just goes off. Anyone who has agreed to listen can react — lights, a door, the monster, the fear meter.",
+          "plainLanguage": "Think of a fire alarm. The alarm does not know who will respond. It just goes off. Anyone who has agreed to listen can react \u2014 lights, a door, the monster, the fear meter.",
           "godotAngle": "Signals are Godot's built-in way to say \"this happened\" without hard-wiring every object to every other object. The flashlight can announce that it was toggled. The fear meter can announce that fear changed. A vision script can announce that the player was spotted.",
-          "example": "# No code to write yet — this idea comes first.\n# Next you will declare, emit, and connect signals."
+          "example": "# No code to write yet \u2014 this idea comes first.\n# Next you will declare, emit, and connect signals."
         },
         {
           "id": 2,
@@ -277,7 +282,7 @@
         {
           "id": 5,
           "title": "Practice: download the starter project",
-          "plainLanguage": "Unzip the starter project, open it in Godot 4, and do the practice in the editor — not in this browser tab.",
+          "plainLanguage": "Unzip the starter project, open it in Godot 4, and do the practice in the editor \u2014 not in this browser tab.",
           "godotAngle": "Open the starter scene, find the empty signal declarations, hook up emit() where the flashlight toggles and where fear changes, then connect() those signals to a simple on-screen label or light. When you press the flashlight key, the light should respond because of the signal, not because the input code reached into the light directly.",
           "example": "fear_changed.emit(fear)\nflashlight_toggled.connect(_on_flashlight_toggled)",
           "delivery": "starter-project"
@@ -288,7 +293,7 @@
       "id": 7,
       "slug": "capstone",
       "title": "Capstone mini-game",
-      "summary": "You put the earlier modules together in a short horror vignette, still inside Godot 4 — not in the browser.",
+      "summary": "You put the earlier modules together in a short horror vignette, still inside Godot 4 \u2014 not in the browser.",
       "horrorHook": "The capstone is a rehearsal, not the finished horror game. After this, you can grow the same systems: a real microphone input, a fuller fear state, looking-direction checks, and richer creature behavior.",
       "delivery": "starter-project",
       "deliveryNote": "Download a starter Godot 4 project (.zip) and run it in the Godot editor. Version 1 has no in-browser playable game and no server-side sandbox.",
@@ -319,7 +324,7 @@
         {
           "id": 4,
           "title": "What \"done\" looks like",
-          "plainLanguage": "You can play through the vignette and feel the systems. The flashlight key toggles a visible beam. The fear meter moves when a scare happens. The creature reacts at least once — it turns, it moves closer, or a label tells you that you were spotted.",
+          "plainLanguage": "You can play through the vignette and feel the systems. The flashlight key toggles a visible beam. The fear meter moves when a scare happens. The creature reacts at least once \u2014 it turns, it moves closer, or a label tells you that you were spotted.",
           "godotAngle": "All of that should happen through your functions and signals, with @export values you can tweak in the Inspector (hear distance, fear step, battery drain) without rewriting the logic.",
           "example": "@export var hear_distance := 15.0\n@export var fear_step := 5.0\n@export var drain_rate := 4.0"
         },
@@ -327,7 +332,7 @@
           "id": 5,
           "title": "What comes next for the full game",
           "plainLanguage": "The capstone is a rehearsal, not the finished horror game. After this, you can grow the same systems: a real microphone input, a fuller fear state, looking-direction checks, and richer creature behavior.",
-          "godotAngle": "The tutor stays your reference. The full game can keep the same signal names and function style, so work you do here is not throwaway practice — it is the first draft of the game's rules.",
+          "godotAngle": "The tutor stays your reference. The full game can keep the same signal names and function style, so work you do here is not throwaway practice \u2014 it is the first draft of the game's rules.",
           "example": "signal fear_changed(new_fear: float)\nsignal flashlight_toggled(is_on: bool)\nsignal player_spotted"
         }
       ]

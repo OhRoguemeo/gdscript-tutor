@@ -1,0 +1,53 @@
+{
+  "lessonId": 4,
+  "title": "Loops — typing drills",
+  "description": "Type for, while, break, and continue. Spacing is flexible, and a trailing semicolon is fine.",
+  "drills": [
+    {
+      "id": 1,
+      "prompt": "Write a for loop header that uses range(3) and a loop variable named i.",
+      "accepted": [
+        "for i in range(3):"
+      ],
+      "hint": "for, the name i, in, range(3), then a colon. range(3) gives 0, 1, and 2.",
+      "explain": "range(3) starts at 0 and stops before 3, so the body runs for 0, 1, and 2."
+    },
+    {
+      "id": 2,
+      "prompt": "Write a for loop header that walks each item in inventory, using a loop variable named item.",
+      "accepted": [
+        "for item in inventory:"
+      ],
+      "hint": "for item in inventory, then a colon. You do not need range here.",
+      "explain": "This walks the array in order. On each pass, item is the next value in inventory."
+    },
+    {
+      "id": 3,
+      "prompt": "Type the keyword that stops a loop right away.",
+      "accepted": [
+        "break"
+      ],
+      "hint": "It is one word. Once the monster finds a target, there is no need to keep scanning.",
+      "explain": "break leaves the loop immediately. The code after the loop is what runs next."
+    },
+    {
+      "id": 4,
+      "prompt": "Type the keyword that skips the rest of this pass and goes to the next item.",
+      "accepted": [
+        "continue"
+      ],
+      "hint": "It is one word, and it does not stop the whole loop.",
+      "explain": "continue skips the rest of the current pass only. The loop keeps going with the next item."
+    },
+    {
+      "id": 5,
+      "prompt": "Write a while loop header that keeps running while fear is less than max_fear.",
+      "accepted": [
+        "while fear < max_fear:",
+        "while (fear < max_fear):"
+      ],
+      "hint": "while, then the condition, then a colon. Make sure the body will eventually raise fear, or this could run forever.",
+      "explain": "A while loop keeps going as long as its condition is true, and it stops as soon as fear is no longer less than max_fear."
+    }
+  ]
+}
