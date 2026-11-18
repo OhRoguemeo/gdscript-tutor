@@ -1,0 +1,327 @@
+{
+  "title": "GDScript Tutor",
+  "subtitle": "Learn GDScript before you build the Godot 4 horror game.",
+  "version": 1,
+  "notes": {
+    "purpose": "This outline is for the GDScript tutor web app, a responsive progressive web app you can use on a PC, a laptop, or a phone. The tutor is being built before the Godot 4 first-person horror game, so every lesson is a skill you will use in that game.",
+    "noSandbox": "There is no in-browser code runner in version 1, and no server-side sandbox. You will read the lessons, take short quizzes, and — for the Signals practice and the Capstone mini-game — download a starter Godot 4 project (.zip) and run it in the Godot editor on your computer.",
+    "starterProjects": "Game sections (Module 6 practice and Module 7) use downloadable starter Godot 4 projects. They are not run in the browser. The .zip files will live in the starter-projects/ folder in a later pass. GitHub and GitHub Pages are set up later, on the main PC."
+  },
+  "modules": [
+    {
+      "id": 1,
+      "slug": "variables",
+      "title": "Variables",
+      "summary": "A variable is a named box that holds a value you can read and change while the game runs.",
+      "horrorHook": "By the end of this module you can describe a fear meter, a flashlight battery, and a stamina value as variables in your future first-person horror game.",
+      "delivery": "in-app",
+      "quiz": "quizzes/lesson-01-variables.json",
+      "subtopics": [
+        {
+          "id": 1,
+          "title": "What a variable is",
+          "plainLanguage": "Think of a labeled box. The label is the name. What is inside is the value. You can look in the box, or put something new in it, as the game runs.",
+          "godotAngle": "In GDScript you declare a variable with var. A fear meter can start at zero and climb as the player gets scared. The := symbol means \"figure out the type from this value.\" Here Godot knows fear is a decimal number (a float).",
+          "example": "var fear := 0.0"
+        },
+        {
+          "id": 2,
+          "title": "Names and assignment",
+          "plainLanguage": "Pick clear names. fear is better than f. You change a variable by assigning a new value with =.",
+          "godotAngle": "That is a flashlight battery starting full, then dropping after some use.",
+          "example": "var flashlight_battery := 100.0\nflashlight_battery = 80.0"
+        },
+        {
+          "id": 3,
+          "title": "Exported variables and the Inspector",
+          "plainLanguage": "Some values are more fun to tweak without opening the code — starting fear, how fast the battery drains, how far the monster can hear.",
+          "godotAngle": "Put @export above a variable and it shows up in the Inspector, where you can change it while you test.",
+          "example": "@export var max_fear := 100.0\n@export var hear_distance := 15.0"
+        },
+        {
+          "id": 4,
+          "title": "Constants",
+          "plainLanguage": "A constant is a value that should not change, like a hard cap on fear or the number of inventory slots.",
+          "godotAngle": "Use const for those. Godot will report an error if the code tries to change them.",
+          "example": "const MAX_INVENTORY_SLOTS := 8"
+        },
+        {
+          "id": 5,
+          "title": "Values that change over time",
+          "plainLanguage": "Horror games live on numbers that creep. Fear rises. Batteries fall. Stamina drains when you sprint.",
+          "godotAngle": "You will later update these every frame or when something happens, for example fear = fear + 5.0 when a door slams. Module 5 will wrap that kind of change in a function.",
+          "example": "fear = fear + 5.0"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "slug": "data-types",
+      "title": "Data Types",
+      "summary": "A type is the kind of value a variable holds: a number, a yes/no flag, a list, and so on. Picking the right type keeps the game predictable.",
+      "horrorHook": "Fear, distance, and battery use floats. Inventory and heard sounds use arrays. Flags such as is_flashlight_on and is_hiding use booleans.",
+      "delivery": "in-app",
+      "subtopics": [
+        {
+          "id": 1,
+          "title": "Numbers: int and float",
+          "plainLanguage": "Whole numbers (int) are for counts: how many matches you have, which floor you are on. Decimal numbers (float) are for amounts that can be in between: fear, distance, microphone volume, how much battery is left.",
+          "godotAngle": "Type hints like : int and : float are optional, but they catch mistakes early.",
+          "example": "var match_count: int = 3\nvar fear: float = 0.0\nvar hear_distance: float = 15.0"
+        },
+        {
+          "id": 2,
+          "title": "Strings and booleans",
+          "plainLanguage": "A string is text, such as a journal line or a monster's display name. A boolean is only true or false, such as \"is the flashlight on?\" or \"is the player hiding?\"",
+          "godotAngle": "Use := when the value already makes the type obvious, or add a type hint if you want it written out.",
+          "example": "var journal_line := \"I heard the floorboards again.\"\nvar is_flashlight_on := false\nvar is_hiding := true"
+        },
+        {
+          "id": 3,
+          "title": "Arrays: lists of things",
+          "plainLanguage": "An array is a list, in order. You might keep a list of items in the inventory, or a list of sound sources the monster has noticed.",
+          "godotAngle": "You will loop over lists like these in Module 4.",
+          "example": "var inventory: Array[String] = [\"flashlight\", \"key\"]\nvar heard_sounds: Array[String] = []"
+        },
+        {
+          "id": 4,
+          "title": "Dictionaries: labeled values",
+          "plainLanguage": "A dictionary is a collection of labeled values, like a tiny filing cabinet. Useful for settings or a bundle of stats that belong together.",
+          "godotAngle": "Keys are usually strings. You can read or update one stat at a time, such as player_stats[\"fear\"].",
+          "example": "var player_stats := {\n    \"fear\": 0.0,\n    \"stamina\": 100.0,\n    \"battery\": 100.0,\n}"
+        },
+        {
+          "id": 5,
+          "title": "null and careful checks",
+          "plainLanguage": "null means \"nothing is here yet.\" That is normal when a node or item has not been set. Always check before you use it, or the game can crash at the worst moment — mid-scare.",
+          "godotAngle": "Check with if monster != null: before you read the monster's position. In the horror game, that matters when a creature is spawned only after a trigger, not at the start of the scene.",
+          "example": "if monster != null:\n    var distance := global_position.distance_to(monster.global_position)"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "slug": "conditionals",
+      "title": "Conditionals",
+      "summary": "Conditionals let the game choose a path: if this is true, do that. This is how a monster decides whether it heard you.",
+      "horrorHook": "The monster hears you if your volume is high and you are close. Looking at the monster, hiding, and a rising fear meter are all conditional checks.",
+      "delivery": "in-app",
+      "subtopics": [
+        {
+          "id": 1,
+          "title": "if, elif, and else",
+          "plainLanguage": "If the flashlight is off, the player is harder to see. Otherwise, the monster can spot them sooner.",
+          "godotAngle": "Use elif (else-if) when you have more than two branches, such as calm, uneasy, and panicked fear levels.",
+          "example": "func spotting_range() -> float:\n    if is_flashlight_on:\n        return 20.0\n    else:\n        return 8.0"
+        },
+        {
+          "id": 2,
+          "title": "Comparisons and logic",
+          "plainLanguage": "You compare values with >, <, == (equal), and != (not equal). You combine checks with and and or.",
+          "godotAngle": "The monster hears you only if you are both loud enough and close enough.",
+          "example": "if mic_volume > threshold and distance_to_player <= hear_distance:\n    player_heard.emit()"
+        },
+        {
+          "id": 3,
+          "title": "Looking, hiding, and stacked checks",
+          "plainLanguage": "Real scares often need more than one condition. Is the player looking at the monster? Are they hiding? Is fear already high?",
+          "godotAngle": "You can nest checks, or keep them flat with and / or. For example, a stare mechanic: if the player is looking at the monster and the monster is in range, raise fear faster. If the player is hiding in a locker, skip the sight check.",
+          "example": "if is_hiding:\n    return\nif is_looking_at_monster and distance_to_player <= hear_distance:\n    raise_fear(8.0 * delta)"
+        },
+        {
+          "id": 4,
+          "title": "match for clear branches",
+          "plainLanguage": "When one value can be several named states, a match is often easier to read than a long if / elif chain.",
+          "godotAngle": "The _ branch is the fallback, like \"anything else.\"",
+          "example": "match fear_state:\n    \"calm\":\n        music_volume = 0.2\n    \"uneasy\":\n        music_volume = 0.5\n    \"panicked\":\n        music_volume = 0.8\n    _:\n        music_volume = 0.2"
+        },
+        {
+          "id": 5,
+          "title": "Putting it on a fear meter",
+          "plainLanguage": "Conditionals are how the meter starts to mean something in the game, not just a number on a page.",
+          "godotAngle": "If fear crosses a threshold, you might shake the camera, darken the edges of the screen, or let the monster move faster. Those rules will live in if and match blocks you can tune in the Inspector with @export thresholds.",
+          "example": "@export var panic_threshold := 75.0\n\nif fear >= panic_threshold:\n    monster_speed = 4.0\nelse:\n    monster_speed = 2.0"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "slug": "loops",
+      "title": "Loops",
+      "summary": "A loop repeats work: once for each item in a list, or until a condition is no longer true.",
+      "horrorHook": "Loops are how a creature checks several rooms, several sound sources, or several lights without you copying the same code over and over.",
+      "delivery": "in-app",
+      "subtopics": [
+        {
+          "id": 1,
+          "title": "for loops over a range",
+          "plainLanguage": "\"Do this ten times\" or \"count from 1 to 5.\" Useful for a short flicker, a countdown, or stepping through a fixed number of lights.",
+          "godotAngle": "range(times) gives you 0, 1, 2, ... up to but not including times. await lets each flicker wait a beat without freezing the game.",
+          "example": "func flicker_lights(times: int) -> void:\n    for i in range(times):\n        hallway_light.visible = not hallway_light.visible\n        await get_tree().create_timer(0.08).timeout\n    hallway_light.visible = true"
+        },
+        {
+          "id": 2,
+          "title": "for loops over arrays",
+          "plainLanguage": "\"For each item in the inventory...\" or \"for each nearby sound...\" the game does the same kind of check.",
+          "godotAngle": "break leaves the loop early once a decision is made — no need to keep scanning after the monster has picked a target.",
+          "example": "for sound in heard_sounds:\n    if sound.volume > threshold:\n        investigate(sound.position)\n        break"
+        },
+        {
+          "id": 3,
+          "title": "while loops",
+          "plainLanguage": "A while loop keeps going as long as something is true. Use it carefully so it cannot run forever.",
+          "godotAngle": "A drain loop might keep lowering the flashlight battery while the light is on, but in Godot you will more often do that work a little at a time in _process rather than in a tight while. Save while for cases such as \"keep searching a list until you find a hiding spot or run out of options.\"",
+          "example": "var i := 0\nwhile i < hiding_spots.size():\n    if hiding_spots[i].is_open:\n        return hiding_spots[i]\n    i += 1\nreturn null"
+        },
+        {
+          "id": 4,
+          "title": "break and continue",
+          "plainLanguage": "break stops the loop. continue skips the rest of this pass and goes to the next item.",
+          "godotAngle": "When you loop over characters in range, continue can skip the player themselves or anyone already hiding, and break can stop once you have found the closest threat. That is how a cheap \"who can hear me?\" check stays readable.",
+          "example": "for body in nearby_bodies:\n    if body == self or body.is_hiding:\n        continue\n    investigate(body.global_position)\n    break"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "slug": "functions",
+      "title": "Functions",
+      "summary": "A function is a named recipe: a pack of steps you can run whenever you need them. Functions keep the game code tidy and reusable.",
+      "horrorHook": "raise_fear() and toggle_flashlight() are the two actions a simple horror vignette needs most, and the rest of the game can call them from input, a monster, or a scripted scare.",
+      "delivery": "in-app",
+      "subtopics": [
+        {
+          "id": 1,
+          "title": "Writing a func",
+          "plainLanguage": "You give the recipe a name, list what it needs (parameters), and optionally give something back (a return value).",
+          "godotAngle": "-> void means this function does not return a value. It just changes fear and keeps it between 0.0 and max_fear.",
+          "example": "func raise_fear(amount: float) -> void:\n    fear = clampf(fear + amount, 0.0, max_fear)"
+        },
+        {
+          "id": 2,
+          "title": "Parameters, returns, and type hints",
+          "plainLanguage": "Parameters are the ingredients you pass in. A return value is the result you get back. Type hints say what kinds of values are allowed.",
+          "godotAngle": "Now any other code can ask, \"how far is the monster from the player?\" and get a float back.",
+          "example": "func distance_to_player(monster: Node3D, player: Node3D) -> float:\n    return monster.global_position.distance_to(player.global_position)"
+        },
+        {
+          "id": 3,
+          "title": "When to split work into functions",
+          "plainLanguage": "If you are copying the same steps in two places, or a block of code is hard to explain in one breath, it probably wants to be a function. Good names read like instructions: toggle_flashlight(), raise_fear(), is_monster_in_view().",
+          "godotAngle": "Built-in functions such as _ready() and _process(delta) are also just functions Godot calls for you. You will put your own functions next to them on the same script.",
+          "example": "func _ready() -> void:\n    toggle_flashlight()  # starts off until the player presses the key\n\nfunc _process(delta: float) -> void:\n    if is_flashlight_on:\n        flashlight_battery = maxf(flashlight_battery - drain_rate * delta, 0.0)"
+        },
+        {
+          "id": 4,
+          "title": "Waiting with await",
+          "plainLanguage": "Sometimes the next step should not happen until a sound finishes, a timer ends, or a door has finished opening.",
+          "godotAngle": "await pauses this function without freezing the whole game. The scream plays, the function waits until it is done, then fear jumps.",
+          "example": "func play_scare() -> void:\n    $Scream.play()\n    await $Scream.finished\n    raise_fear(15.0)"
+        },
+        {
+          "id": 5,
+          "title": "A flashlight and a fear meter as functions",
+          "plainLanguage": "Once these two actions are functions, the rest of the game can call them from input, from a monster, or from a scripted scare.",
+          "godotAngle": "You will hook toggle_flashlight() to a button or key later. Combined with raise_fear(), you already have the two actions a simple horror vignette needs most.",
+          "example": "func toggle_flashlight() -> void:\n    is_flashlight_on = not is_flashlight_on\n    flashlight_light.visible = is_flashlight_on"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "slug": "signals",
+      "title": "Signals",
+      "summary": "A signal is a message a node can send when something happens. Other nodes can listen and react, without being tightly tied together.",
+      "horrorHook": "These same signals — fear_changed, flashlight_toggled, player_spotted — are the nervous system of the full first-person horror game.",
+      "delivery": "starter-project",
+      "deliveryNote": "The practice for this module is not an in-browser exercise. Download a starter Godot 4 project (.zip) and run it in the Godot editor. There is no in-browser code execution for this step.",
+      "starterProject": "starter-projects/06-signals-practice.zip",
+      "subtopics": [
+        {
+          "id": 1,
+          "title": "What a signal is",
+          "plainLanguage": "Think of a fire alarm. The alarm does not know who will respond. It just goes off. Anyone who has agreed to listen can react — lights, a door, the monster, the fear meter.",
+          "godotAngle": "Signals are Godot's built-in way to say \"this happened\" without hard-wiring every object to every other object. The flashlight can announce that it was toggled. The fear meter can announce that fear changed. A vision script can announce that the player was spotted.",
+          "example": "# No code to write yet — this idea comes first.\n# Next you will declare, emit, and connect signals."
+        },
+        {
+          "id": 2,
+          "title": "Declaring a signal",
+          "plainLanguage": "You list the messages a script is allowed to send, and what information those messages carry.",
+          "godotAngle": "Those declarations usually sit near the top of the script, with your variables.",
+          "example": "signal fear_changed(new_fear: float)\nsignal flashlight_toggled(is_on: bool)\nsignal player_spotted"
+        },
+        {
+          "id": 3,
+          "title": "Sending a signal with emit()",
+          "plainLanguage": "When the event actually happens, you fire the message.",
+          "godotAngle": "In Godot 4 you call emit() on the signal itself, not a separate emit_signal() function.",
+          "example": "func raise_fear(amount: float) -> void:\n    fear = clampf(fear + amount, 0.0, max_fear)\n    fear_changed.emit(fear)\n\nfunc toggle_flashlight() -> void:\n    is_flashlight_on = not is_flashlight_on\n    flashlight_toggled.emit(is_flashlight_on)"
+        },
+        {
+          "id": 4,
+          "title": "Listening with connect()",
+          "plainLanguage": "A listener signs up to be told when the signal fires, and names the function that should run.",
+          "godotAngle": "In Godot 4 you connect the signal to a function (a Callable). Now the UI can react to fear, and the light can react to the toggle, without those scripts rewriting each other.",
+          "example": "func _ready() -> void:\n    fear_changed.connect(_on_fear_changed)\n    flashlight_toggled.connect(_on_flashlight_toggled)\n\nfunc _on_fear_changed(new_fear: float) -> void:\n    # Later: update a fear bar on the screen.\n    pass\n\nfunc _on_flashlight_toggled(is_on: bool) -> void:\n    flashlight_light.visible = is_on"
+        },
+        {
+          "id": 5,
+          "title": "Practice: download the starter project",
+          "plainLanguage": "Unzip the starter project, open it in Godot 4, and do the practice in the editor — not in this browser tab.",
+          "godotAngle": "Open the starter scene, find the empty signal declarations, hook up emit() where the flashlight toggles and where fear changes, then connect() those signals to a simple on-screen label or light. When you press the flashlight key, the light should respond because of the signal, not because the input code reached into the light directly.",
+          "example": "fear_changed.emit(fear)\nflashlight_toggled.connect(_on_flashlight_toggled)",
+          "delivery": "starter-project"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "slug": "capstone",
+      "title": "Capstone mini-game",
+      "summary": "You put the earlier modules together in a short horror vignette, still inside Godot 4 — not in the browser.",
+      "horrorHook": "The capstone is a rehearsal, not the finished horror game. After this, you can grow the same systems: a real microphone input, a fuller fear state, looking-direction checks, and richer creature behavior.",
+      "delivery": "starter-project",
+      "deliveryNote": "Download a starter Godot 4 project (.zip) and run it in the Godot editor. Version 1 has no in-browser playable game and no server-side sandbox.",
+      "starterProject": "starter-projects/07-capstone-mini-game.zip",
+      "subtopics": [
+        {
+          "id": 1,
+          "title": "What you will build",
+          "plainLanguage": "A small, playable scare, not the whole game. You walk a short space, you have a flashlight, a fear meter rises when something goes wrong, and a creature reacts if you make noise or point the light at the wrong time.",
+          "godotAngle": "The starter project will already have a simple first-person scene, a flashlight node, a fear value, and a creature placeholder. Your job is to wire the GDScript: variables and types, the if checks, a loop if you need to scan sound sources, functions such as raise_fear() and toggle_flashlight(), and the signals that keep those pieces talking.",
+          "example": "func raise_fear(amount: float) -> void:\n    fear = clampf(fear + amount, 0.0, max_fear)\n    fear_changed.emit(fear)"
+        },
+        {
+          "id": 2,
+          "title": "Download and open the starter project",
+          "plainLanguage": "Unzip the file, open Godot 4, choose Import, and point it at the project folder. Press F5 (or the Play button) to run the scene. You should see the starter room before you have written anything new.",
+          "godotAngle": "Work only in the scripts the README inside the zip points you to. You do not need to build a 3D world from scratch for this capstone.",
+          "example": "# In Godot 4: Import the unzipped project, then press F5 to play.",
+          "delivery": "starter-project"
+        },
+        {
+          "id": 3,
+          "title": "How the systems fit together",
+          "plainLanguage": "This is the map of everything you have learned, in one place.",
+          "godotAngle": "Variables and types: fear, flashlight_battery, is_flashlight_on, hear_distance. Conditionals: if the mic or a noise key goes over a threshold and the creature is close, it hears you; if you are looking at it with the light on, fear rises faster. Loops: scan a short list of sound sources. Functions: raise_fear(), toggle_flashlight(), distance_to_player(). Signals: fear_changed.emit(), flashlight_toggled.emit(), player_spotted.emit(), each connected with connect() to the UI or the creature.",
+          "example": "if is_flashlight_on and is_looking_at_monster:\n    raise_fear(8.0 * delta)\nelif mic_volume > threshold and distance <= hear_distance:\n    player_spotted.emit()"
+        },
+        {
+          "id": 4,
+          "title": "What \"done\" looks like",
+          "plainLanguage": "You can play through the vignette and feel the systems. The flashlight key toggles a visible beam. The fear meter moves when a scare happens. The creature reacts at least once — it turns, it moves closer, or a label tells you that you were spotted.",
+          "godotAngle": "All of that should happen through your functions and signals, with @export values you can tweak in the Inspector (hear distance, fear step, battery drain) without rewriting the logic.",
+          "example": "@export var hear_distance := 15.0\n@export var fear_step := 5.0\n@export var drain_rate := 4.0"
+        },
+        {
+          "id": 5,
+          "title": "What comes next for the full game",
+          "plainLanguage": "The capstone is a rehearsal, not the finished horror game. After this, you can grow the same systems: a real microphone input, a fuller fear state, looking-direction checks, and richer creature behavior.",
+          "godotAngle": "The tutor stays your reference. The full game can keep the same signal names and function style, so work you do here is not throwaway practice — it is the first draft of the game's rules.",
+          "example": "signal fear_changed(new_fear: float)\nsignal flashlight_toggled(is_on: bool)\nsignal player_spotted"
+        }
+      ]
+    }
+  ]
+}

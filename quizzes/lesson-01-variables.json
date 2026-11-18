@@ -1,0 +1,55 @@
+{
+  "lessonId": 1,
+  "title": "Variables — practice quiz",
+  "description": "A short check on Module 1. This quiz does not run GDScript; it only checks that the ideas landed.",
+  "questions": [
+    {
+      "id": 1,
+      "prompt": "Which line correctly declares a fear meter that starts at zero in Godot 4 GDScript?",
+      "choices": [
+        "fear = 0.0",
+        "var fear := 0.0",
+        "variable fear = 0.0",
+        "let fear = 0.0"
+      ],
+      "answer": 1,
+      "explain": "In GDScript you declare a variable with var. The := symbol tells Godot to infer the type from the value, so fear is a float starting at 0.0."
+    },
+    {
+      "id": 2,
+      "prompt": "What does @export do when you put it above a variable?",
+      "choices": [
+        "It publishes the game to GitHub Pages.",
+        "It makes the variable show up in the Inspector so you can tweak it while testing.",
+        "It turns the variable into a constant that can never change.",
+        "It sends the value to a server-side sandbox."
+      ],
+      "answer": 1,
+      "explain": "@export surfaces the variable in Godot's Inspector. That is how you tune values such as max_fear or hear_distance without digging through the script."
+    },
+    {
+      "id": 3,
+      "prompt": "Which of these should be a const rather than a var?",
+      "choices": [
+        "A fear meter that rises when a door slams.",
+        "A flashlight battery that drains while the light is on.",
+        "The maximum number of inventory slots, which should not change while you play.",
+        "Whether the flashlight is currently on."
+      ],
+      "answer": 2,
+      "explain": "const is for values that must not change. A slot cap is a good constant. Fear, battery, and a flashlight toggle all change as the game runs, so they are variables."
+    },
+    {
+      "id": 4,
+      "prompt": "You want a flashlight battery that starts at 100 and can later drop to 80. Which pair of lines does that?",
+      "choices": [
+        "const flashlight_battery := 100.0\nflashlight_battery = 80.0",
+        "var flashlight_battery := 100.0\nflashlight_battery = 80.0",
+        "export flashlight_battery = 100.0\nflashlight_battery := 80.0",
+        "func flashlight_battery := 100.0\nflashlight_battery = 80.0"
+      ],
+      "answer": 1,
+      "explain": "Declare it with var and :=, then assign a new value with =. const would error if you tried to change it, and Godot 4 uses @export, not a bare export keyword."
+    }
+  ]
+}

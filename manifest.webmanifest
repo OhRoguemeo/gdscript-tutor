@@ -1,0 +1,19 @@
+{
+  "name": "GDScript Tutor",
+  "short_name": "GDScript",
+  "description": "Learn GDScript for Godot 4 before you build a first-person horror game.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0e0e12",
+  "theme_color": "#478cbf",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

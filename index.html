@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0e0e12">
+  <meta name="description" content="Learn GDScript for Godot 4 before you build a first-person horror game. A free, offline-friendly tutor for PC, laptop, and phone.">
+  <title>GDScript Tutor</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icons/icon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <button
+      type="button"
+      class="nav-toggle"
+      id="nav-toggle"
+      aria-controls="site-nav"
+      aria-expanded="false"
+      aria-label="Open lesson menu"
+    >
+      <span class="nav-toggle-bars" aria-hidden="true"></span>
+    </button>
+    <a class="brand" href="#/">
+      <img class="brand-icon" src="assets/icons/icon.svg" alt="" width="32" height="32">
+      <span class="brand-title">GDScript Tutor</span>
+    </a>
+  </header>
+
+  <div class="layout">
+    <div class="nav-backdrop" id="nav-backdrop" hidden></div>
+    <nav id="site-nav" class="site-nav" aria-label="Lessons">
+      <p class="nav-heading">Lessons</p>
+      <ul id="lesson-list" class="lesson-list">
+        <li class="nav-loading">Loading lessons…</li>
+      </ul>
+    </nav>
+
+    <main id="main" class="site-main" tabindex="-1">
+      <p class="nav-loading">Loading lessons…</p>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>Built to teach GDScript before the Godot 4 horror game.</p>
+    <p>Version 1 — no in-browser code runner, no server-side sandbox.</p>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
