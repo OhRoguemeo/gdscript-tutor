@@ -16,6 +16,7 @@
       "horrorHook": "By the end of this module you can describe a fear meter, a flashlight battery, and a stamina value as variables in your future first-person horror game.",
       "delivery": "in-app",
       "quiz": "quizzes/lesson-01-variables.json",
+      "content": "lessons/01-variables.md",
       "subtopics": [
         {
           "id": 1,

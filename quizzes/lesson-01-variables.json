@@ -1,55 +1,55 @@
 {
   "lessonId": 1,
-  "title": "Variables — practice quiz",
-  "description": "A short check on Module 1. This quiz does not run GDScript; it only checks that the ideas landed.",
+  "title": "Variables \u2014 practice quiz",
+  "description": "A short check on what a variable is and how the four basic types work. This quiz does not run GDScript; it only checks that the ideas landed.",
   "questions": [
     {
       "id": 1,
-      "prompt": "Which line correctly declares a fear meter that starts at zero in Godot 4 GDScript?",
+      "prompt": "What does a variable do?",
       "choices": [
-        "fear = 0.0",
-        "var fear := 0.0",
-        "variable fear = 0.0",
-        "let fear = 0.0"
+        "Draws a 3D model on screen",
+        "Stores a piece of information the game can use and change later",
+        "Plays a sound effect",
+        "Closes the game"
       ],
       "answer": 1,
-      "explain": "In GDScript you declare a variable with var. The := symbol tells Godot to infer the type from the value, so fear is a float starting at 0.0."
+      "explain": "A variable is a labeled box that holds a value, like the player's health or whether the flashlight is on. You can look at it or change it as the game runs."
     },
     {
       "id": 2,
-      "prompt": "What does @export do when you put it above a variable?",
+      "prompt": "Which type should you use for `fear_level = 0.75`?",
       "choices": [
-        "It publishes the game to GitHub Pages.",
-        "It makes the variable show up in the Inspector so you can tweak it while testing.",
-        "It turns the variable into a constant that can never change.",
-        "It sends the value to a server-side sandbox."
+        "`int`",
+        "`String`",
+        "`float`",
+        "`bool`"
       ],
-      "answer": 1,
-      "explain": "@export surfaces the variable in Godot's Inspector. That is how you tune values such as max_fear or hear_distance without digging through the script."
+      "answer": 2,
+      "explain": "`0.75` has a decimal point, so it is a `float`. An `int` is only for whole numbers."
     },
     {
       "id": 3,
-      "prompt": "Which of these should be a const rather than a var?",
+      "prompt": "Which line correctly makes a text variable?",
       "choices": [
-        "A fear meter that rises when a door slams.",
-        "A flashlight battery that drains while the light is on.",
-        "The maximum number of inventory slots, which should not change while you play.",
-        "Whether the flashlight is currently on."
+        "`var current_room: String = Basement`",
+        "`var current_room: String = \"Basement\"`",
+        "`current_room var = \"Basement\"`",
+        "`var current_room: int = \"Basement\"`"
       ],
-      "answer": 2,
-      "explain": "const is for values that must not change. A slot cap is a good constant. Fear, battery, and a flashlight toggle all change as the game runs, so they are variables."
+      "answer": 1,
+      "explain": "Text values need quotes around them, and the line starts with `var`. Without quotes, Godot would think Basement is a name, not text."
     },
     {
       "id": 4,
-      "prompt": "You want a flashlight battery that starts at 100 and can later drop to 80. Which pair of lines does that?",
+      "prompt": "What can a `bool` variable hold?",
       "choices": [
-        "const flashlight_battery := 100.0\nflashlight_battery = 80.0",
-        "var flashlight_battery := 100.0\nflashlight_battery = 80.0",
-        "export flashlight_battery = 100.0\nflashlight_battery := 80.0",
-        "func flashlight_battery := 100.0\nflashlight_battery = 80.0"
+        "Any number",
+        "Only `true` or `false`",
+        "A list of words",
+        "Only decimal numbers"
       ],
       "answer": 1,
-      "explain": "Declare it with var and :=, then assign a new value with =. const would error if you tried to change it, and Godot 4 uses @export, not a bare export keyword."
+      "explain": "A `bool` is a yes-or-no value. In GDScript that is just `true` or `false`, like whether the flashlight is on."
     }
   ]
 }
