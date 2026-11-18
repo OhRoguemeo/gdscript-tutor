@@ -17,7 +17,7 @@ The tutor is being built **before** the Godot 4 first-person horror game, so eve
 gdscript-tutor/
   index.html                 # App shell (header, lesson nav, main, footer)
   styles.css                 # Dark, mobile-first layout
-  app.js                     # Loads lessons, hash routing, service worker registration
+  app.js                     # Loads lessons, hash routing, bootcamp progress, service worker registration
   sw.js                      # Cache-first offline service worker
   manifest.webmanifest       # PWA name, colors, standalone display, icon
   README.md
@@ -52,3 +52,14 @@ Then open http://127.0.0.1:8000 in a browser. On a phone or another computer on 
 ## v1 plan
 
 Game sections use downloadable starter Godot projects, with no sandbox. GitHub push and Pages wait for step two on the main PC.
+
+
+## Bootcamp progress
+
+The tutor tracks a client-side bootcamp layer in `localStorage`:
+
+- Quizzes award 25 XP per correct answer based on your **best** score, plus 50 XP for a perfect 4/4. Retakes only add the difference.
+- Modules 6 and 7 have a **Mark mission complete** button worth 150 XP each (no quiz yet).
+- Lesson N+1 stays locked until you pass lesson N with at least 3/4. Lesson 1 is always open. Modules 6 and 7 unlock after you pass lesson 5.
+- Ranks, achievements, and a home dashboard live on this device. Use **Export progress** / **Import progress** to move a save between your laptop and phone.
+- Older quiz best-score keys (`gdscript-tutor:best-score:lesson-*`) are migrated automatically.

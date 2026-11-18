@@ -1,5 +1,5 @@
 /* Cache-first service worker for offline lessons. */
-const CACHE_NAME = "gdscript-tutor-v3";
+const CACHE_NAME = "gdscript-tutor-v4";
 const PRECACHE = [
   "./",
   "./index.html",

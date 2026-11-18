@@ -29,6 +29,7 @@
       <img class="brand-icon" src="assets/icons/icon.svg" alt="" width="32" height="32">
       <span class="brand-title">GDScript Tutor</span>
     </a>
+    <a class="rank-chip" id="rank-chip" href="#/" hidden></a>
   </header>
 
   <div class="layout">
@@ -47,8 +48,21 @@
 
   <footer class="site-footer">
     <p>Built to teach GDScript before the Godot 4 horror game.</p>
-    <p>Version 1 — no in-browser code runner, no server-side sandbox.</p>
+    <p>Version 1.1 — bootcamp progress is saved on this device.</p>
   </footer>
+
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-relevant="additions"></div>
+
+  <input id="import-progress" type="file" accept="application/json,.json" hidden>
+
+  <dialog id="reset-dialog" class="confirm-dialog" aria-labelledby="reset-dialog-title">
+    <h2 id="reset-dialog-title">Reset progress?</h2>
+    <p>This clears your XP, rank, badges, mission completions, and saved quiz scores on this device. This cannot be undone.</p>
+    <div class="dialog-actions">
+      <button type="button" class="btn" id="cancel-reset">Cancel</button>
+      <button type="button" class="btn btn-danger" id="confirm-reset">Reset progress</button>
+    </div>
+  </dialog>
 
   <script src="app.js" defer></script>
 </body>
